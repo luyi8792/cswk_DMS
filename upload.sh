@@ -30,20 +30,24 @@ if [ -n "$(git status --porcelain)" ]; then
     
     # 提交更改
     echo "[$(timestamp)] 提交更改..."
-    git commit -m "Update: $(date '+%Y-%m-%d %H:%M:%S')"
+    git commit -m "Initial commit: $(date '+%Y-%m-%d %H:%M:%S')"
 fi
 
-# 拉取最新代码
-echo "[$(timestamp)] 拉取远程仓库最新代码..."
-git pull origin $BRANCH || {
-    echo "[$(timestamp)] 拉取代码失败，可能是首次推送"
+# 创建并切换到main分支
+echo "[$(timestamp)] 切换到main分支..."
+git checkout -b main 2>/dev/null || git checkout main
+
+# 尝试拉取远程代码（如果存在）
+echo "[$(timestamp)] 尝试拉取远程仓库最新代码..."
+git pull origin main --allow-unrelated-histories || {
+    echo "[$(timestamp)] 拉取代码失败，继续推送..."
 }
 
 # 推送代码
 echo "[$(timestamp)] 推送代码到远程仓库..."
-git push -u origin $BRANCH || {
-    echo "[$(timestamp)] 推送���败，尝试强制推送..."
-    git push -u origin $BRANCH --force
+git push -u origin main || {
+    echo "[$(timestamp)] 推送失败，尝试强制推送..."
+    git push -u origin main --force
 }
 
 # 检查结果
