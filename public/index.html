@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>档案管理系统</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">档案管理系统</div>
+            <button class="hamburger" onclick="toggleMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-menu">
+                <li><a href="#" onclick="checkAuthAndShowPage('home')" data-page="home" class="active">首页</a></li>
+                <li><a href="#" onclick="checkAuthAndShowPage('input')" data-page="input">档案录入</a></li>
+                <li><a href="#" onclick="checkAuthAndShowPage('list')" data-page="list">档案列表</a></li>
+                <li><a href="#" onclick="checkAuthAndShowPage('search')" data-page="search">档案查询</a></li>
+            </ul>
+            <div class="user-info" id="userInfo">
+                <span id="username"></span>
+                <a href="#" onclick="logout()" class="logout-link desktop-only">退出登录</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 首页 -->
+        <div id="homePage" class="page">
+            <div class="stats-card">
+                <h2>档案统计</h2>
+                <div id="statsContent"></div>
+            </div>
+        </div>
+
+        <!-- 档案录入页 -->
+        <div id="inputPage" class="page" style="display: none;">
+            <h2>档案录入</h2>
+            <form id="archiveForm">
+                <div class="form-group">
+                    <label for="source">来源：</label>
+                    <input type="text" id="source" required>
+                </div>
+                <div class="form-group">
+                    <label for="element">要素：</label>
+                    <input type="text" id="element" required>
+                </div>
+                <div class="form-group">
+                    <label for="customDataText">自定义数据：</label>
+                    <textarea id="customDataText" rows="10" placeholder="请输入键值对格式的数据，每行一个，使用冒号分隔，例如：
+姓名: 张三
+性别: 男
+身份证号: 440123199001011234
+户籍地址: 广东省广州市天河区
+（中英文冒号都以）"></textarea>
+                </div>
+                <button type="submit">提交档案</button>
+            </form>
+        </div>
+
+        <!-- 档案列表页 -->
+        <div id="listPage" class="page" style="display: none;">
+            <h2>档案列表</h2>
+            <div id="archivesList"></div>
+            <div class="pagination" id="listPagination"></div>
+        </div>
+
+        <!-- 档案查询页 -->
+        <div id="searchPage" class="page" style="display: none;">
+            <h2>档案查询</h2>
+            <div class="search-box">
+                <input type="text" id="searchKeyword" placeholder="输入关键词进行搜索">
+                <button onclick="searchArchives()">搜索</button>
+            </div>
+            <div id="searchResults"></div>
+            <div class="pagination" id="searchPagination"></div>
+        </div>
+
+        <!-- 登录页面 -->
+        <div id="loginPage" class="page">
+            <div class="login-form">
+                <h2>用户登录</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginUsername">用户名：</label>
+                        <input type="text" id="loginUsername" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">密码：</label>
+                        <input type="password" id="loginPassword" name="password" required>
+                    </div>
+                    <button type="submit">登录</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
