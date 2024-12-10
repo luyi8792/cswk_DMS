@@ -198,7 +198,7 @@ app.put('/archives/:id', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
-// 添加删除档案的路由
+// 修改删除档案的路由
 app.delete('/archives/:id', verifyToken, isAdmin, async (req, res) => {
   try {
     const archive = await Archive.findById(req.params.id);
@@ -206,7 +206,7 @@ app.delete('/archives/:id', verifyToken, isAdmin, async (req, res) => {
       return res.status(404).json({ message: '档案不存在' });
     }
     
-    await archive.remove();
+    await Archive.deleteOne({ _id: req.params.id });
     res.json({ message: '档案已删除' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -249,7 +249,7 @@ app.post('/auth/login', async (req, res) => {
         const user = await User.findOne({ username });
         if (!user) {
             console.log('用户不存在:', username);
-            return res.status(401).json({ message: '用户名或密码错���' });
+            return res.status(401).json({ message: '用户名或密码错误' });
         }
 
         console.log('找到用户:', { username, role: user.role });

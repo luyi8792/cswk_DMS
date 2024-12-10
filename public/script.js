@@ -205,7 +205,7 @@ function displayArchives(archives, pagination, containerId, paginationId) {
 
 // 页面加载时显示首页
 window.onload = () => {
-    console.log('���面加载，检查登录状态...');
+    console.log('页面加载，检查登录状态...');
     token = localStorage.getItem('token');
     userRole = localStorage.getItem('userRole');
     
@@ -288,7 +288,7 @@ async function saveEdit(id) {
     try {
         const rawCustomData = document.getElementById('editCustomData').value;
         
-        const response = await fetch(`/archives/${id}`, {
+        const response = await fetchWithAuth(`/archives/${id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
@@ -310,6 +310,9 @@ async function saveEdit(id) {
             throw new Error(error.message);
         }
     } catch (error) {
+        if (error.message === '未登录' || error.message === '登录已过期，请重新登录') {
+            showPage('login');
+        }
         alert('保存失败：' + error.message);
     }
 }
@@ -329,7 +332,7 @@ async function deleteArchive(id) {
     }
 
     try {
-        const response = await fetch(`/archives/${id}`, {
+        const response = await fetchWithAuth(`/archives/${id}`, {
             method: 'DELETE'
         });
 
@@ -346,6 +349,9 @@ async function deleteArchive(id) {
             throw new Error(error.message);
         }
     } catch (error) {
+        if (error.message === '未登录' || error.message === '登录已过期，请重新登录') {
+            showPage('login');
+        }
         alert('删除失败：' + error.message);
     }
 }
@@ -367,35 +373,41 @@ function checkAuth() {
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    const username = document.getElementById('loginUsername').value;
-    const password = document.getElementById('loginPassword').value;
+    const usernameInput = document.getElementById('loginUsername');
+    const passwordInput = document.getElementById('loginPassword');
+    
+    // 移除之前的错误状态
+    usernameInput.classList.remove('error');
+    passwordInput.classList.remove('error');
 
     try {
-        console.log('发送登录请求...');
         const response = await fetch('/auth/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({
+                username: usernameInput.value,
+                password: passwordInput.value
+            })
         });
 
         const data = await response.json();
 
         if (response.ok) {
-            console.log('登录成功，保存用户信息...');
+            // 登录成功处理...
             token = data.token;
             userRole = data.role;
-            
-            // 保存登录状态
             localStorage.setItem('token', token);
-            localStorage.setItem('username', username);
+            localStorage.setItem('username', usernameInput.value);
             localStorage.setItem('userRole', data.role);
             localStorage.setItem('loginTime', new Date().toISOString());
-            
             updateUI();
             showPage('home');
         } else {
+            // 登录失败，添加错误效果
+            usernameInput.classList.add('error');
+            passwordInput.classList.add('error');
             throw new Error(data.message || '登录失败');
         }
     } catch (error) {
@@ -419,7 +431,7 @@ function updateUI() {
     console.log('更新UI，角色:', userRole);
     const isAdmin = userRole === 'admin';
     
-    // 显示/隐藏管理员功能
+    // 显示/隐藏管理功能
     document.querySelectorAll('.admin-only').forEach(el => {
         el.style.display = isAdmin ? 'block' : 'none';
     });

@@ -51,17 +51,25 @@ input {
     border-radius: 4px;
 }
 
+/* 统一按钮基础样式 */
 button {
-    background: #4CAF50;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 10px 20px;
+    padding: 12px 30px;
     border: none;
-    border-radius: 4px;
+    border-radius: 25px;
+    font-size: 14px;
     cursor: pointer;
+    transition: all 0.3s ease;
 }
 
 button:hover {
-    background: #45a049;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+}
+
+button:active {
+    transform: translateY(1px);
 }
 
 .search-form {
@@ -80,10 +88,17 @@ button:hover {
 }
 
 .archive-item {
-    background: #f9f9f9;
-    padding: 15px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.archive-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
 .navbar {
@@ -146,18 +161,56 @@ button:hover {
     margin-top: 20px;
 }
 
+/* 分页按钮样式 */
 .pagination button {
-    padding: 5px 10px;
+    padding: 8px 15px;
+    min-width: 40px;
+}
+
+.pagination button.active {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
 }
 
 .search-box {
     display: flex;
-    gap: 10px;
+    gap: 15px;
     margin-bottom: 20px;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .search-box input {
     flex: 1;
+    padding: 12px 20px;
+    border: 1px solid #ddd;
+    border-radius: 25px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.search-box button {
+    padding: 12px 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.search-box button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
 }
 
 #customFields {
@@ -337,25 +390,35 @@ textarea {
 
 /* 添加操作按钮样式 */
 .action-buttons {
-    margin-top: 10px;
     display: flex;
     gap: 10px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+/* 修改和删除按钮样式 */
+.action-buttons button {
+    flex: 1;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
 }
 
 .edit-btn {
-    background: #4a90e2;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .delete-btn {
-    background: #e25555;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-.edit-btn:hover {
-    background: #357abd;
-}
-
-.delete-btn:hover {
-    background: #c74444;
+/* 提交档案按钮 */
+#archiveForm button[type="submit"] {
+    width: 100%;
+    margin-top: 20px;
 }
 
 /* 修改对话框样式 */
@@ -415,4 +478,145 @@ textarea {
     .mobile-logout a {
         color: #e25555 !important;
     }
+}
+
+/* 登录页面样式 */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 0;
+    margin: 0;
+    z-index: 1000;
+}
+
+.login-box {
+    background: white;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 450px;
+    margin: auto;
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.login-header h2 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 24px;
+}
+
+.login-header p {
+    color: #666;
+    font-size: 14px;
+}
+
+.login-form .form-group {
+    margin-bottom: 20px;
+}
+
+.input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-group i {
+    position: absolute;
+    left: 15px;
+    color: #666;
+}
+
+.login-form input {
+    width: 100%;
+    padding: 12px 20px 12px 45px;
+    border: 1px solid #ddd;
+    border-radius: 25px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.login-form input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.login-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 25px;
+    color: white;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.login-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 7px 14px rgba(0, 0, 0, 0.1);
+}
+
+.login-btn:active {
+    transform: translateY(1px);
+}
+
+.login-footer {
+    margin-top: 20px;
+    text-align: center;
+    color: #666;
+    font-size: 12px;
+}
+
+.login-footer p {
+    margin: 5px 0;
+}
+
+/* 响应式适配 */
+@media screen and (max-width: 480px) {
+    .login-box {
+        width: 95%;
+        padding: 30px 20px;
+    }
+
+    .login-header h2 {
+        font-size: 20px;
+    }
+
+    .login-form input {
+        padding: 10px 15px 10px 40px;
+    }
+
+    .login-btn {
+        padding: 10px;
+        font-size: 14px;
+    }
+}
+
+/* 添加输入框动画效果 */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.login-form input.error {
+    border-color: #ff4d4f;
+    animation: shake 0.3s ease-in-out;
 } 
