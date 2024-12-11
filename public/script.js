@@ -152,7 +152,10 @@ function displayArchives(archives, pagination, containerId, paginationId) {
         return;
     }
 
-    archives.forEach(archive => {
+    // 计算起始序号
+    const startNumber = (pagination.current - 1) * 10 + 1;
+
+    archives.forEach((archive, index) => {
         const archiveElement = document.createElement('div');
         archiveElement.className = 'archive-item';
         
@@ -170,18 +173,37 @@ function displayArchives(archives, pagination, containerId, paginationId) {
             }
         }
 
+        // 根据用户权限和档案创建者显示操作按钮
+        const isAdmin = userRole === 'admin';
+        const isCreator = archive.createdBy === localStorage.getItem('username');
+        const canEdit = isAdmin || isCreator;
+        const canDelete = isAdmin;
+
         // 添加操作按钮
         const actionButtons = `
             <div class="action-buttons">
-                <button onclick="editArchive('${archive._id}')" class="edit-btn">修改</button>
-                <button onclick="deleteArchive('${archive._id}')" class="delete-btn">删除</button>
+                ${canEdit ? `<button onclick="editArchive('${archive._id}')" class="edit-btn">修改</button>` : ''}
+                ${canDelete ? `<button onclick="deleteArchive('${archive._id}')" class="delete-btn">删除</button>` : ''}
             </div>
         `;
 
+        // 构建录入信息 HTML
+        const creationInfo = `
+            <div class="creation-info">
+                <p><strong>录入账号：</strong>${archive.createdBy || ''}</p>
+                <p><strong>录入时间：</strong>${archive.createdAt ? new Date(archive.createdAt).toLocaleString() : ''}</p>
+                <p><strong>客户端IP：</strong>${archive.clientIP || ''}</p>
+            </div>
+        `;
+
+        // 使用新的布局结构
         archiveElement.innerHTML = `
-            ${baseHtml}
-            ${customDataHtml}
-            <p><strong>录入时间：</strong>${archive.createdAt ? new Date(archive.createdAt).toLocaleString() : ''}</p>
+            <div class="archive-number">${startNumber + index}</div>
+            <div class="archive-content">
+                ${baseHtml}
+                ${customDataHtml}
+                ${creationInfo}
+            </div>
             ${actionButtons}
         `;
         container.appendChild(archiveElement);
@@ -251,7 +273,11 @@ document.addEventListener('click', (e) => {
 // 添加修改档案的函数
 async function editArchive(id) {
     try {
-        const response = await fetch(`/archives/${id}`);
+        const response = await fetchWithAuth(`/archives/${id}`);
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message);
+        }
         const archive = await response.json();
         
         // 显示修改对话框
@@ -279,7 +305,11 @@ async function editArchive(id) {
         
         document.body.appendChild(dialog);
     } catch (error) {
-        alert('加载档案失败：' + error.message);
+        if (error.message.includes('权限不足')) {
+            alert('权限不足：只能修改自己创建的档案');
+        } else {
+            alert('加载档案失败：' + error.message);
+        }
     }
 }
 
@@ -336,23 +366,24 @@ async function deleteArchive(id) {
             method: 'DELETE'
         });
 
-        if (response.ok) {
-            alert('删除成功');
-            // 刷新档案列表
-            if (document.getElementById('listPage').style.display !== 'none') {
-                loadArchivesList(1);
-            } else {
-                searchArchives(1);
-            }
-        } else {
+        if (!response.ok) {
             const error = await response.json();
             throw new Error(error.message);
         }
-    } catch (error) {
-        if (error.message === '未登录' || error.message === '登录已过期，请重新登录') {
-            showPage('login');
+
+        alert('删除成功');
+        // 刷新档案列表
+        if (document.getElementById('listPage').style.display !== 'none') {
+            loadArchivesList(1);
+        } else {
+            searchArchives(1);
         }
-        alert('删除失败：' + error.message);
+    } catch (error) {
+        if (error.message.includes('权限不足')) {
+            alert('权限不足：只有管理员可以删除档案');
+        } else {
+            alert('删除失败：' + error.message);
+        }
     }
 }
 

@@ -30,9 +30,18 @@ const archiveSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
-    createdAt: {
+    // 录入信息
+    createdBy: {          // 录入账号
+        type: String,
+        required: true
+    },
+    createdAt: {          // 录入时间
         type: Date,
         default: Date.now
+    },
+    clientIP: {           // 客户端IP
+        type: String,
+        required: true
     }
 });
 

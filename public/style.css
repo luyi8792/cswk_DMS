@@ -89,16 +89,21 @@ button:active {
 
 .archive-item {
     background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    margin-bottom: 15px;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
     transition: all 0.3s ease;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    border: 1px solid #edf2f7;
 }
 
 .archive-item:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border-color: #e2e8f0;
 }
 
 .navbar {
@@ -390,21 +395,31 @@ textarea {
 
 /* 添加操作按钮样式 */
 .action-buttons {
+    position: absolute;
+    right: 25px;
+    top: 50%;
+    transform: translateY(-50%);
     display: flex;
-    gap: 10px;
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid #eee;
+    flex-direction: column;
+    gap: 8px;
 }
 
 /* 修改和删除按钮样式 */
 .action-buttons button {
-    flex: 1;
-    padding: 10px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
+    padding: 8px 16px;
+    font-size: 14px;
+    min-width: 70px;
+    height: 32px;
+    border-radius: 6px;
+    opacity: 0.9;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.action-buttons button:hover {
+    opacity: 1;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .edit-btn {
@@ -454,11 +469,18 @@ textarea {
 
 @media screen and (max-width: 768px) {
     .action-buttons {
-        flex-direction: column;
+        position: static;
+        flex-direction: row;
+        margin-top: 15px;
+        width: 100%;
+        transform: none;
     }
     
     .action-buttons button {
-        width: 100%;
+        flex: 1;
+        height: 32px;
+        font-size: 14px;
+        padding: 6px 12px;
     }
 }
 
@@ -619,4 +641,199 @@ textarea {
 .login-form input.error {
     border-color: #ff4d4f;
     animation: shake 0.3s ease-in-out;
+}
+
+/* 档案列表项样式优化 */
+.archive-item {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    border: 1px solid #edf2f7;
+}
+
+.archive-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border-color: #e2e8f0;
+}
+
+/* 序号样式 */
+.archive-number {
+    min-width: 35px;
+    margin-right: 20px;
+    color: #4a5568;
+    font-weight: bold;
+    font-size: 16px;
+    padding-top: 2px;
+}
+
+/* 档案内容样式 */
+.archive-content {
+    flex: 1;
+    padding-right: 100px;
+}
+
+.archive-content p {
+    margin-bottom: 12px;
+    color: #4a5568;
+    line-height: 1.6;
+}
+
+.archive-content p:last-child {
+    margin-bottom: 0;
+}
+
+.archive-content strong {
+    color: #2d3748;
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+/* 操作按钮容器样式 */
+.action-buttons {
+    position: absolute;
+    right: 25px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* 修改和删除按钮样式 */
+.action-buttons button {
+    padding: 8px 16px;
+    font-size: 14px;
+    min-width: 70px;
+    height: 32px;
+    border-radius: 6px;
+    opacity: 0.9;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.action-buttons button:hover {
+    opacity: 1;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.edit-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.delete-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* 分页样式优化 */
+.pagination {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+}
+
+.pagination button {
+    padding: 8px 16px;
+    min-width: 40px;
+    height: 36px;
+    font-size: 14px;
+    margin: 0 4px;
+    border-radius: 8px;
+    background: white;
+    color: #4a5568;
+    border: 1px solid #e2e8f0;
+    box-shadow: none;
+    transition: all 0.2s ease;
+}
+
+.pagination button:hover {
+    background: #f7fafc;
+    border-color: #cbd5e0;
+    transform: none;
+}
+
+.pagination button.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.25);
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+    #listPage {
+        padding: 15px;
+    }
+
+    .archive-item {
+        padding: 20px;
+        flex-direction: column;
+    }
+
+    .archive-number {
+        margin-bottom: 15px;
+    }
+
+    .archive-content {
+        padding-right: 0;
+    }
+
+    .action-buttons {
+        position: static;
+        flex-direction: row;
+        margin-top: 15px;
+        width: 100%;
+        transform: none;
+    }
+
+    .action-buttons button {
+        flex: 1;
+        height: 32px;
+        font-size: 14px;
+        padding: 6px 12px;
+    }
+
+    .pagination button {
+        padding: 6px 12px;
+        min-width: 36px;
+        height: 32px;
+        margin: 0 2px;
+    }
+}
+
+/* 录入信息样式 */
+.creation-info {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed #e2e8f0;
+    font-size: 0.9em;
+    color: #718096;
+}
+
+.creation-info p {
+    margin-bottom: 8px;
+}
+
+.creation-info p:last-child {
+    margin-bottom: 0;
+}
+
+.creation-info strong {
+    color: #4a5568;
+    font-weight: 600;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+    .creation-info {
+        margin-top: 12px;
+        padding-top: 12px;
+    }
 } 

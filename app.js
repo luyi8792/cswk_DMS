@@ -66,25 +66,35 @@ app.get('/archives/stats', async (req, res) => {
 });
 
 // 修改录入档案的路由
-app.post('/archives', verifyToken, isAdmin, async (req, res) => {
-  try {
-    const { source, element, rawCustomData } = req.body;
-    
-    // 解析自定义数据
-    const customData = parseCustomData(rawCustomData);
-    
-    const archive = new Archive({
-      source,
-      element,
-      customData: Object.fromEntries(customData),
-      rawCustomData
-    });
-    
-    const savedArchive = await archive.save();
-    res.status(201).json(savedArchive);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
+app.post('/archives', verifyToken, async (req, res) => {
+    try {
+        const { source, element, rawCustomData } = req.body;
+        
+        // 获取客户端IP地址
+        const clientIP = req.headers['x-forwarded-for'] || 
+                        req.connection.remoteAddress ||
+                        req.socket.remoteAddress ||
+                        req.connection.socket.remoteAddress;
+        
+        // 解析自定义数据
+        const customData = parseCustomData(rawCustomData);
+        
+        // 创建新档案
+        const archive = new Archive({
+            source,
+            element,
+            customData: Object.fromEntries(customData),
+            rawCustomData,
+            // 添加录入信息
+            createdBy: req.user.username,  // 从 token 中获取用户名
+            clientIP: clientIP
+        });
+        
+        const savedArchive = await archive.save();
+        res.status(201).json(savedArchive);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
 });
 
 // 获取档案列表（分页）
@@ -177,40 +187,64 @@ app.get('/archives/:id', async (req, res) => {
   }
 });
 
-// 添加修改档案的路由
-app.put('/archives/:id', verifyToken, isAdmin, async (req, res) => {
-  try {
-    const { rawCustomData } = req.body;
-    const customData = parseCustomData(rawCustomData);
-    
-    const archive = await Archive.findById(req.params.id);
-    if (!archive) {
-      return res.status(404).json({ message: '档案不存在' });
-    }
+// 添加检查修改权限的中间件
+const checkEditPermission = async (req, res, next) => {
+    try {
+        const archive = await Archive.findById(req.params.id);
+        if (!archive) {
+            return res.status(404).json({ message: '档案不存在' });
+        }
 
-    archive.customData = Object.fromEntries(customData);
-    archive.rawCustomData = rawCustomData;
-    
-    const updatedArchive = await archive.save();
-    res.json(updatedArchive);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
+        // 管理员可以修改所有档案
+        if (req.user.role === 'admin') {
+            return next();
+        }
+
+        // 普通用户只能修改自己创建的档案
+        if (archive.createdBy === req.user.username) {
+            return next();
+        }
+
+        return res.status(403).json({ message: '权限不足：只能修改自己创建的档案' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// 修改档案路由，添加权限检查
+app.put('/archives/:id', verifyToken, checkEditPermission, async (req, res) => {
+    try {
+        const { rawCustomData } = req.body;
+        const customData = parseCustomData(rawCustomData);
+        
+        // 查找现有档案
+        const archive = await Archive.findById(req.params.id);
+        
+        // 只更新自定义数据部分，保持其他字段不变
+        archive.customData = Object.fromEntries(customData);
+        archive.rawCustomData = rawCustomData;
+        
+        // 保存更新
+        const updatedArchive = await archive.save({ validateModifiedOnly: true });  // 只验证修改的字段
+        res.json(updatedArchive);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
 });
 
-// 修改删除档案的路由
+// 删除档案路由，只允许管理员操作
 app.delete('/archives/:id', verifyToken, isAdmin, async (req, res) => {
-  try {
-    const archive = await Archive.findById(req.params.id);
-    if (!archive) {
-      return res.status(404).json({ message: '档案不存在' });
+    try {
+        const archive = await Archive.findById(req.params.id);
+        if (!archive) {
+            return res.status(404).json({ message: '档案不存在' });
+        }
+        
+        await Archive.deleteOne({ _id: req.params.id });
+        res.json({ message: '档案已删除' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-    
-    await Archive.deleteOne({ _id: req.params.id });
-    res.json({ message: '档案已删除' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
 });
 
 // 用户注册
