@@ -6,25 +6,26 @@
     <title>档案管理系统</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <div class="nav-brand">档案管理系统</div>
-            <button class="hamburger" onclick="toggleMenu()">
+            <div class="nav-brand">DMS</div>
+            <button class="menu-toggle" onclick="toggleMenu()">
                 <span></span>
                 <span></span>
                 <span></span>
             </button>
             <ul class="nav-menu">
-                <li><a href="#" onclick="checkAuthAndShowPage('home')" data-page="home" class="active">首页</a></li>
-                <li><a href="#" onclick="checkAuthAndShowPage('input')" data-page="input">档案录入</a></li>
-                <li><a href="#" onclick="checkAuthAndShowPage('list')" data-page="list">档案列表</a></li>
-                <li><a href="#" onclick="checkAuthAndShowPage('search')" data-page="search">档案查询</a></li>
+                <li><a href="#" onclick="checkAuthAndShowPage('home')" data-page="home">概览</a></li>
+                <li><a href="#" onclick="checkAuthAndShowPage('input')" data-page="input">录入</a></li>
+                <li><a href="#" onclick="checkAuthAndShowPage('list')" data-page="list">档案</a></li>
+                <li><a href="#" onclick="checkAuthAndShowPage('search')" data-page="search">搜索</a></li>
             </ul>
-            <div class="user-info" id="userInfo">
-                <span id="username"></span>
-                <a href="#" onclick="logout()" class="logout-link desktop-only">退出登录</a>
+            <div class="user-info">
+                <span id="username" class="user-name"></span>
+                <button onclick="logout()" class="btn btn-logout">退出</button>
             </div>
         </div>
     </nav>
@@ -33,8 +34,17 @@
         <!-- 首页 -->
         <div id="homePage" class="page">
             <div class="stats-card">
-                <h2>档案统计</h2>
-                <div id="statsContent"></div>
+                <h2>系统概览</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">总档案数</div>
+                        <div class="stat-value" id="totalArchives">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">最新录入</div>
+                        <div class="stat-value" id="latestArchive">-</div>
+                    </div>
+                </div>
             </div>
         </div>
 

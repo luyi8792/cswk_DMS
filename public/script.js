@@ -31,19 +31,20 @@ async function loadHomeStats() {
     try {
         const response = await fetchWithAuth('/archives/stats');
         const stats = await response.json();
-        document.getElementById('statsContent').innerHTML = `
-            <p>总档案数：${stats.totalCount}</p>
-            <p>最新录入时间：${stats.latestArchiveTime ? new Date(stats.latestArchiveTime).toLocaleString() : '暂无记录'}</p>
-        `;
+        
+        // 更新统计数据显示
+        document.getElementById('totalArchives').textContent = stats.totalCount || '0';
+        document.getElementById('latestArchive').textContent = 
+            stats.latestArchiveTime ? new Date(stats.latestArchiveTime).toLocaleString() : '暂无';
+        
     } catch (error) {
         console.error('加载统计数据失败：', error);
         if (error.message === '未登录' || error.message === '登录已过期，请重新登录') {
             showPage('login');
         }
-        document.getElementById('statsContent').innerHTML = `
-            <p>加载统计数据失败</p>
-            <p>错误信息：${error.message}</p>
-        `;
+        // 显示错误状态
+        document.getElementById('totalArchives').textContent = '-';
+        document.getElementById('latestArchive').textContent = '-';
     }
 }
 
@@ -254,18 +255,31 @@ window.onload = () => {
 
 // 添加汉堡菜单控制函数
 function toggleMenu() {
+    const menuToggle = document.querySelector('.menu-toggle');
     const navMenu = document.querySelector('.nav-menu');
+    
+    menuToggle.classList.toggle('active');
     navMenu.classList.toggle('active');
 }
 
+// 点击导航链接时关闭菜单
+document.querySelectorAll('.nav-menu a').forEach(link => {
+    link.addEventListener('click', () => {
+        const menuToggle = document.querySelector('.menu-toggle');
+        const navMenu = document.querySelector('.nav-menu');
+        
+        menuToggle.classList.remove('active');
+        navMenu.classList.remove('active');
+    });
+});
+
 // 点击页面其他地方关闭菜单
 document.addEventListener('click', (e) => {
+    const menuToggle = document.querySelector('.menu-toggle');
     const navMenu = document.querySelector('.nav-menu');
-    const hamburger = document.querySelector('.hamburger');
     
-    if (navMenu.classList.contains('active') && 
-        !e.target.closest('.nav-menu') && 
-        !e.target.closest('.hamburger')) {
+    if (!menuToggle.contains(e.target) && !navMenu.contains(e.target)) {
+        menuToggle.classList.remove('active');
         navMenu.classList.remove('active');
     }
 });
@@ -273,6 +287,12 @@ document.addEventListener('click', (e) => {
 // 添加修改档案的函数
 async function editArchive(id) {
     try {
+        // 移除已存在的编辑对话框
+        const existingDialog = document.querySelector('.edit-dialog');
+        if (existingDialog) {
+            existingDialog.remove();
+        }
+
         const response = await fetchWithAuth(`/archives/${id}`);
         if (!response.ok) {
             const error = await response.json();
@@ -280,7 +300,7 @@ async function editArchive(id) {
         }
         const archive = await response.json();
         
-        // 显示修改对话框
+        // 创建新的编辑对话框
         const dialog = document.createElement('div');
         dialog.className = 'edit-dialog';
         dialog.innerHTML = `
@@ -297,13 +317,23 @@ async function editArchive(id) {
                     <textarea id="editCustomData" rows="10">${archive.rawCustomData || ''}</textarea>
                 </div>
                 <div class="button-group">
-                    <button onclick="saveEdit('${id}')">保存</button>
-                    <button onclick="closeEditDialog()">取消</button>
+                    <button onclick="saveEdit('${id}')" class="btn">保存</button>
+                    <button onclick="closeEditDialog()" class="btn">取消</button>
                 </div>
             </div>
         `;
         
+        // 添加点击背景关闭对话框的功能
+        dialog.addEventListener('click', (e) => {
+            if (e.target === dialog) {
+                closeEditDialog();
+            }
+        });
+        
         document.body.appendChild(dialog);
+
+        // 防止页面滚动
+        document.body.style.overflow = 'hidden';
     } catch (error) {
         if (error.message.includes('权限不足')) {
             alert('权限不足：只能修改自己创建的档案');
@@ -352,6 +382,8 @@ function closeEditDialog() {
     const dialog = document.querySelector('.edit-dialog');
     if (dialog) {
         dialog.remove();
+        // 恢复页面滚动
+        document.body.style.overflow = '';
     }
 }
 
@@ -407,7 +439,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const usernameInput = document.getElementById('loginUsername');
     const passwordInput = document.getElementById('loginPassword');
     
-    // 移除之前的错误状态
+    // 移除之前的错状态
     usernameInput.classList.remove('error');
     passwordInput.classList.remove('error');
 

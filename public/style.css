@@ -1,3 +1,20 @@
+/* 全局变量 */
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --secondary-gradient: linear-gradient(135deg, #6B8DD6 0%, #8E37D7 100%);
+    --text-primary: #2d3748;
+    --text-secondary: #4a5568;
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+}
+
+/* 基础样式重置 */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -5,549 +22,467 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     line-height: 1.6;
-    background-color: #f4f4f4;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
 }
 
-.container {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-h1 {
-    text-align: center;
-    color: #333;
-    margin-bottom: 30px;
-}
-
-.section {
-    background: white;
-    padding: 20px;
-    border-radius: 5px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-h2 {
-    color: #444;
-    margin-bottom: 20px;
-}
-
-.form-group {
-    margin-bottom: 15px;
-}
-
-label {
-    display: block;
-    margin-bottom: 5px;
-}
-
-input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-/* 统一按钮基础样式 */
-button {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 12px 30px;
-    border: none;
-    border-radius: 25px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
-}
-
-button:active {
-    transform: translateY(1px);
-}
-
-.search-form {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.search-form input {
-    flex: 1;
-}
-
-#archivesList {
-    display: grid;
-    gap: 10px;
-}
-
-.archive-item {
-    background: white;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.05);
-    margin-bottom: 20px;
-    transition: all 0.3s ease;
-    position: relative;
-    display: flex;
-    align-items: flex-start;
-    border: 1px solid #edf2f7;
-}
-
-.archive-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    border-color: #e2e8f0;
-}
-
+/* 导航栏样式 */
 .navbar {
-    background: #333;
-    color: white;
+    background: var(--bg-secondary);
+    box-shadow: var(--shadow-sm);
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1000;
     padding: 1rem 0;
-    margin-bottom: 2rem;
+    height: 64px;
+    display: flex;
+    align-items: center;
 }
 
 .nav-container {
     max-width: 1200px;
     margin: 0 auto;
+    padding: 0 2rem;
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    align-items: center;
-    padding: 0 20px;
-    position: relative;
-}
-
-.user-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    width: 100%;
 }
 
 .nav-brand {
     font-size: 1.5rem;
-    font-weight: bold;
+    font-weight: 600;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .nav-menu {
     display: flex;
-    list-style: none;
     gap: 2rem;
+    list-style: none;
 }
 
 .nav-menu a {
-    color: white;
+    color: var(--text-secondary);
     text-decoration: none;
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
+    font-weight: 500;
+    transition: color 0.3s ease;
 }
 
 .nav-menu a:hover,
 .nav-menu a.active {
-    background: #555;
+    color: #667eea;
 }
 
-.stats-card {
-    background: white;
+/* 主容器样式 */
+.container {
+    max-width: 1200px;
+    margin: 80px auto 0;
     padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.pagination {
+/* 卡片样式 */
+.card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* 按钮基础样式 */
+button,
+.btn {
+    background: var(--primary-gradient);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.875rem;
+}
+
+button:hover,
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    opacity: 0.95;
+}
+
+/* 输入框样式 */
+.input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-sm);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* 档案列表项样式优化 */
+.archive-item {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    position: relative;
     display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 20px;
+    gap: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
 }
 
-/* 分页按钮样式 */
-.pagination button {
-    padding: 8px 15px;
-    min-width: 40px;
+.archive-number {
+    color: var(--text-secondary);
+    font-weight: 600;
+    min-width: 2rem;
 }
 
-.pagination button.active {
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+.archive-content {
+    flex: 1;
+    padding-right: 120px;
 }
 
+.archive-content p {
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+}
+
+.archive-content strong {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.creation-info {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed #e2e8f0;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.action-buttons {
+    position: absolute;
+    right: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.action-buttons button {
+    padding: 0.5rem 1rem;
+    min-width: 80px;
+    font-size: 0.875rem;
+    opacity: 0.9;
+    border-radius: var(--radius-sm);
+}
+
+/* 搜索框样式 */
 .search-box {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
     display: flex;
-    gap: 15px;
-    margin-bottom: 20px;
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    gap: 1rem;
+    box-shadow: var(--shadow-md);
 }
 
 .search-box input {
     flex: 1;
-    padding: 12px 20px;
-    border: 1px solid #ddd;
-    border-radius: 25px;
-    font-size: 14px;
-    transition: all 0.3s ease;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
 }
 
-.search-box input:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+/* 统计卡片样式 */
+.stats-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-md);
 }
 
-.search-box button {
-    padding: 12px 30px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 25px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.3s ease;
+.stats-card h2 {
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    font-weight: 600;
 }
 
-.search-box button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
-}
-
-#customFields {
-    margin: 20px 0;
-}
-
-.custom-field {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-
-.custom-field input {
-    flex: 1;
-}
-
-.hamburger {
-    display: none;
-    flex-direction: column;
-    justify-content: space-between;
-    width: 30px;
-    height: 21px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    z-index: 10;
-}
-
-.hamburger span {
-    width: 100%;
-    height: 3px;
-    background: white;
-    border-radius: 10px;
-    transition: all 0.3s linear;
-}
-
-@media screen and (max-width: 768px) {
+/* 响应式设计 */
+@media (max-width: 768px) {
     .nav-container {
-        flex-wrap: wrap;
-        padding: 10px 20px;
+        padding: 0 1rem;
     }
 
-    .nav-brand {
-        flex: 1;
-    }
-
-    .hamburger {
-        display: flex;
-    }
-
-    .nav-menu {
-        display: none;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        flex-direction: column;
-        background: #333;
-        padding: 1rem 0;
-        gap: 0;
-        z-index: 100;
-    }
-
-    .nav-menu.active {
-        display: flex;
-    }
-
-    .nav-menu li {
-        width: 100%;
-    }
-
-    .nav-menu a {
-        width: 100%;
-        padding: 1rem 20px;
-        display: block;
-    }
-
-    .nav-menu a:hover,
-    .nav-menu a.active {
-        background: #555;
-    }
-
-    .user-info {
-        order: 4;
-        width: 100%;
-        margin-top: 10px;
-        padding: 10px;
-        background: #444;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    #username {
-        color: #fff;
-    }
-
-    .logout-link {
-        color: #fff !important;
-        text-decoration: none;
-        padding: 5px 10px;
-    }
-
-    .logout-link:hover {
-        background: #555;
-        border-radius: 4px;
-    }
-}
-
-@media screen and (max-width: 768px) {
     .container {
-        padding: 10px;
-    }
-
-    .form-group {
-        margin-bottom: 10px;
-    }
-
-    .custom-field {
-        flex-direction: column;
-        gap: 5px;
-    }
-
-    .custom-field button {
-        align-self: flex-start;
+        padding: 1rem;
     }
 
     .search-box {
         flex-direction: column;
     }
-
-    .search-box button {
-        width: 100%;
-    }
-
-    .archive-item {
-        padding: 10px;
-    }
 }
 
-/* 添加文本框样式 */
-textarea {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    resize: vertical;
-    min-height: 150px;
-    font-family: monospace;
+/* 统计卡片网格布局 */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
 }
 
-@media screen and (max-width: 768px) {
-    textarea {
-        min-height: 120px;
-    }
-}
-
-/* 添加错误消息和无数据提示的样式 */
-.error-message {
-    background: #ffe6e6;
-    border: 1px solid #ffcccc;
-    padding: 15px;
-    border-radius: 4px;
-    color: #cc0000;
-    margin: 10px 0;
-}
-
-.no-data {
+.stat-item {
+    background: linear-gradient(135deg, #f6f8ff 0%, #f0f4ff 100%);
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
     text-align: center;
-    padding: 20px;
-    color: #666;
-    background: #f9f9f9;
-    border-radius: 4px;
-    border: 1px dashed #ddd;
+    transition: transform 0.3s ease;
 }
 
-/* 添加操作按钮样式 */
+.stat-item:hover {
+    transform: translateY(-2px);
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 600;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* 页面通用样式 */
+.page {
+    margin-top: 1rem;
+}
+
+/* 表单样式优化 */
+.form-group {
+    background: var(--bg-secondary);
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.form-group label {
+    display: block;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* 搜索结果样式 */
+#searchResults,
+#archivesList {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+/* 分页样式优化 */
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.pagination button {
+    padding: 0.5rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.pagination button.active {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-group {
+        padding: 1rem;
+    }
+}
+
+/* 提交档案按钮样式 */
+#archiveForm button[type="submit"] {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+    margin-top: 1rem;
+    border-radius: var(--radius-md);
+}
+
+/* 搜索按钮样式 */
+.search-box button {
+    padding: 0.75rem 1.5rem;
+    min-width: 100px;
+    font-size: 0.875rem;
+    border-radius: var(--radius-sm);
+}
+
+/* 操作按钮样式 */
 .action-buttons {
     position: absolute;
-    right: 25px;
+    right: 1.5rem;
     top: 50%;
     transform: translateY(-50%);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0.5rem;
 }
 
-/* 修改和删除按钮样式 */
 .action-buttons button {
-    padding: 8px 16px;
-    font-size: 14px;
-    min-width: 70px;
-    height: 32px;
-    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    min-width: 80px;
+    font-size: 0.875rem;
     opacity: 0.9;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-}
-
-.action-buttons button:hover {
-    opacity: 1;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: var(--radius-sm);
 }
 
 .edit-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--primary-gradient);
 }
 
 .delete-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--secondary-gradient);
 }
 
-/* 提交档案按钮 */
-#archiveForm button[type="submit"] {
-    width: 100%;
-    margin-top: 20px;
+/* 退出按钮样式 */
+.btn-logout {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    background: var(--secondary-gradient);
+    opacity: 0.9;
 }
 
-/* 修改对话框样式 */
-.edit-dialog {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-.edit-content {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 600px;
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-.button-group {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-    margin-top: 20px;
-}
-
-@media screen and (max-width: 768px) {
+/* 移动端适配 */
+@media (max-width: 768px) {
     .action-buttons {
         position: static;
         flex-direction: row;
-        margin-top: 15px;
-        width: 100%;
         transform: none;
+        margin-top: 1rem;
+        justify-content: flex-end;
     }
-    
+
     .action-buttons button {
-        flex: 1;
-        height: 32px;
-        font-size: 14px;
-        padding: 6px 12px;
+        padding: 0.5rem 1rem;
     }
-}
 
-/* 修改退出链接样式 */
-.logout-link {
-    color: #666;
-    text-decoration: none;
-    margin-left: 15px;
-}
-
-.logout-link:hover {
-    color: #e25555;
-}
-
-/* 移动端样式 */
-@media screen and (max-width: 768px) {
-    .mobile-logout a {
-        color: #e25555 !important;
+    #archiveForm button[type="submit"],
+    .search-box button {
+        width: 100%;
+        margin-top: 0.5rem;
     }
 }
 
 /* 登录页面样式 */
 .login-container {
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 64px);
+    background: var(--primary-gradient);
+    padding: 0;
+    margin: 64px 0 0 0;
+    width: 100%;
     position: fixed;
-    top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 0;
-    margin: 0;
-    z-index: 1000;
 }
 
 .login-box {
-    background: white;
-    padding: 40px;
-    border-radius: 10px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    width: 90%;
-    max-width: 450px;
-    margin: auto;
+    background: var(--bg-secondary);
+    padding: 2.5rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
 }
 
 .login-header {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 2rem;
 }
 
 .login-header h2 {
-    color: #333;
-    margin-bottom: 10px;
-    font-size: 24px;
+    color: var(--text-primary);
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
 }
 
 .login-header p {
-    color: #666;
-    font-size: 14px;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
 }
 
 .login-form .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 1.5rem;
 }
 
 .input-group {
@@ -558,41 +493,45 @@ textarea {
 
 .input-group i {
     position: absolute;
-    left: 15px;
-    color: #666;
+    left: 1rem;
+    color: var(--text-secondary);
+    opacity: 0.7;
 }
 
 .login-form input {
     width: 100%;
-    padding: 12px 20px 12px 45px;
-    border: 1px solid #ddd;
-    border-radius: 25px;
-    font-size: 14px;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
     transition: all 0.3s ease;
 }
 
 .login-form input:focus {
     outline: none;
     border-color: #667eea;
-    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+/* 登录按钮样式 */
 .login-btn {
     width: 100%;
-    padding: 12px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    border-radius: 25px;
+    padding: 0.875rem;
+    background: var(--primary-gradient);
     color: white;
-    font-size: 16px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 1rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
+    margin-top: 1rem;
 }
 
 .login-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 7px 14px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
+    opacity: 0.95;
 }
 
 .login-btn:active {
@@ -600,240 +539,209 @@ textarea {
 }
 
 .login-footer {
-    margin-top: 20px;
+    margin-top: 1.5rem;
     text-align: center;
-    color: #666;
-    font-size: 12px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
 }
 
 .login-footer p {
-    margin: 5px 0;
+    margin: 0.25rem 0;
 }
 
-/* 响应式适配 */
-@media screen and (max-width: 480px) {
-    .login-box {
-        width: 95%;
-        padding: 30px 20px;
-    }
-
-    .login-header h2 {
-        font-size: 20px;
-    }
-
-    .login-form input {
-        padding: 10px 15px 10px 40px;
-    }
-
-    .login-btn {
-        padding: 10px;
-        font-size: 14px;
-    }
+/* 错误状态样式 */
+.login-form input.error {
+    border-color: #e53e3e;
+    animation: shake 0.3s ease-in-out;
 }
 
-/* 添加输入框动画效果 */
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-5px); }
     75% { transform: translateX(5px); }
 }
 
-.login-form input.error {
-    border-color: #ff4d4f;
-    animation: shake 0.3s ease-in-out;
+/* 移动端适配 */
+@media (max-width: 480px) {
+    .login-container {
+        margin: 56px 0 0 0; /* 移动端导航栏通常更小 */
+        min-height: calc(100vh - 56px);
+        padding: 0.5rem;
+    }
+
+    .login-box {
+        padding: 1.5rem;
+        margin: 0 0.5rem;
+        max-width: none;
+        border-radius: var(--radius-md);
+    }
+
+    .login-header h2 {
+        font-size: 1.25rem;
+    }
+
+    .login-header p {
+        font-size: 0.8rem;
+    }
+
+    .login-form input {
+        padding: 0.625rem 1rem 0.625rem 2.25rem;
+        font-size: 0.875rem;
+    }
+
+    .login-btn {
+        padding: 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    .login-footer {
+        font-size: 0.7rem;
+    }
+
+    .input-group i {
+        font-size: 0.875rem;
+    }
 }
 
-/* 档案列表项样式优化 */
-.archive-item {
-    background: white;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.05);
-    margin-bottom: 20px;
-    transition: all 0.3s ease;
-    position: relative;
+/* 平板设备适配 */
+@media (min-width: 481px) and (max-width: 768px) {
+    .login-container {
+        margin: 60px 0 0 0;
+        min-height: calc(100vh - 60px);
+        padding: 1rem;
+    }
+
+    .login-box {
+        max-width: 480px;
+        margin: 0 1rem;
+    }
+}
+
+/* 编辑对话框样式 */
+.edit-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
-    align-items: flex-start;
-    border: 1px solid #edf2f7;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
 }
 
-.archive-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    border-color: #e2e8f0;
+.edit-content {
+    background: var(--bg-secondary);
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
-/* 序号样式 */
-.archive-number {
-    min-width: 35px;
-    margin-right: 20px;
-    color: #4a5568;
-    font-weight: bold;
-    font-size: 16px;
-    padding-top: 2px;
+.edit-content h3 {
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
 }
 
-/* 档案内容样式 */
-.archive-content {
+.button-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.button-group button {
     flex: 1;
-    padding-right: 100px;
 }
 
-.archive-content p {
-    margin-bottom: 12px;
-    color: #4a5568;
-    line-height: 1.6;
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .edit-content {
+        width: 95%;
+        padding: 1.5rem;
+    }
 }
 
-.archive-content p:last-child {
-    margin-bottom: 0;
-}
-
-.archive-content strong {
-    color: #2d3748;
-    font-weight: 600;
-    margin-right: 8px;
-}
-
-/* 操作按钮容器样式 */
-.action-buttons {
-    position: absolute;
-    right: 25px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
+/* 汉堡菜单按钮样式 */
+.menu-toggle {
+    display: none;
     flex-direction: column;
-    gap: 8px;
-}
-
-/* 修改和删除按钮样式 */
-.action-buttons button {
-    padding: 8px 16px;
-    font-size: 14px;
-    min-width: 70px;
-    height: 32px;
-    border-radius: 6px;
-    opacity: 0.9;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-}
-
-.action-buttons button:hover {
-    opacity: 1;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.edit-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.delete-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-/* 分页样式优化 */
-.pagination {
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid #e9ecef;
-}
-
-.pagination button {
-    padding: 8px 16px;
-    min-width: 40px;
-    height: 36px;
-    font-size: 14px;
-    margin: 0 4px;
-    border-radius: 8px;
-    background: white;
-    color: #4a5568;
-    border: 1px solid #e2e8f0;
-    box-shadow: none;
-    transition: all 0.2s ease;
-}
-
-.pagination button:hover {
-    background: #f7fafc;
-    border-color: #cbd5e0;
-    transform: none;
-}
-
-.pagination button.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    justify-content: space-between;
+    width: 24px;
+    height: 18px;
+    background: transparent;
     border: none;
-    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.25);
+    cursor: pointer;
+    padding: 0;
+    z-index: 1100;
 }
 
-/* 移动端适配 */
-@media screen and (max-width: 768px) {
-    #listPage {
-        padding: 15px;
+.menu-toggle span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+/* 移动端导航栏适配 */
+@media (max-width: 768px) {
+    .menu-toggle {
+        display: flex;
     }
 
-    .archive-item {
-        padding: 20px;
+    .nav-menu {
+        position: fixed;
+        top: 56px;
+        left: 0;
+        right: 0;
+        background: var(--bg-secondary);
         flex-direction: column;
+        align-items: center;
+        padding: 1rem 0;
+        gap: 1rem;
+        transform: translateY(-100%);
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-md);
+        z-index: 1000;
     }
 
-    .archive-number {
-        margin-bottom: 15px;
+    .nav-menu.active {
+        transform: translateY(0);
+        opacity: 1;
+        visibility: visible;
     }
 
-    .archive-content {
-        padding-right: 0;
+    .nav-container {
+        padding: 0.5rem 1rem;
     }
 
-    .action-buttons {
-        position: static;
-        flex-direction: row;
-        margin-top: 15px;
-        width: 100%;
-        transform: none;
+    .navbar {
+        height: 56px;
+        padding: 0;
     }
 
-    .action-buttons button {
-        flex: 1;
-        height: 32px;
-        font-size: 14px;
-        padding: 6px 12px;
+    .nav-brand {
+        font-size: 1.25rem;
     }
 
-    .pagination button {
-        padding: 6px 12px;
-        min-width: 36px;
-        height: 32px;
-        margin: 0 2px;
+    /* 汉堡菜单激活状态 */
+    .menu-toggle.active span:first-child {
+        transform: translateY(8px) rotate(45deg);
     }
-}
 
-/* 录入信息样式 */
-.creation-info {
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px dashed #e2e8f0;
-    font-size: 0.9em;
-    color: #718096;
-}
+    .menu-toggle.active span:nth-child(2) {
+        opacity: 0;
+    }
 
-.creation-info p {
-    margin-bottom: 8px;
-}
-
-.creation-info p:last-child {
-    margin-bottom: 0;
-}
-
-.creation-info strong {
-    color: #4a5568;
-    font-weight: 600;
-}
-
-/* 移动端适配 */
-@media screen and (max-width: 768px) {
-    .creation-info {
-        margin-top: 12px;
-        padding-top: 12px;
+    .menu-toggle.active span:last-child {
+        transform: translateY(-8px) rotate(-45deg);
     }
 } 
