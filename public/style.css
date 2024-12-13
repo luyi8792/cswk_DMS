@@ -21,6 +21,37 @@
     padding: 0;
 }
 
+html, body {
+    height: 100%;
+    width: 100%;
+    font-size: 16px;
+}
+
+/* 响应式字体大小 */
+@media (max-width: 320px) {
+    html {
+        font-size: 14px;
+    }
+}
+
+@media (min-width: 321px) and (max-width: 375px) {
+    html {
+        font-size: 15px;
+    }
+}
+
+@media (min-width: 376px) and (max-width: 414px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+@media (min-width: 415px) and (max-width: 768px) {
+    html {
+        font-size: 17px;
+    }
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     line-height: 1.6;
@@ -149,10 +180,23 @@ button:hover,
     transition: all 0.3s ease;
 }
 
+.archive-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
 .archive-number {
-    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3rem;
+    height: 3rem;
+    background: var(--primary-gradient);
+    border-radius: var(--radius-sm);
+    color: white;
     font-weight: 600;
-    min-width: 2rem;
+    font-size: 1.125rem;
+    box-shadow: var(--shadow-sm);
 }
 
 .archive-content {
@@ -161,13 +205,21 @@ button:hover,
 }
 
 .archive-content p {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
     color: var(--text-secondary);
+    display: flex;
+    align-items: baseline;
+}
+
+.archive-content p:last-child {
+    margin-bottom: 0;
 }
 
 .archive-content strong {
     color: var(--text-primary);
     font-weight: 500;
+    min-width: 5rem;
+    margin-right: 0.5rem;
 }
 
 .creation-info {
@@ -176,6 +228,22 @@ button:hover,
     border-top: 1px dashed #e2e8f0;
     font-size: 0.875rem;
     color: var(--text-secondary);
+}
+
+.creation-info p {
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: baseline;
+}
+
+.custom-data {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.custom-data p {
+    margin-bottom: 0.5rem;
 }
 
 .action-buttons {
@@ -194,6 +262,49 @@ button:hover,
     font-size: 0.875rem;
     opacity: 0.9;
     border-radius: var(--radius-sm);
+}
+
+.edit-btn {
+    background: var(--primary-gradient);
+}
+
+.delete-btn {
+    background: var(--secondary-gradient);
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .archive-item {
+        flex-direction: column;
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .archive-number {
+        min-width: 2.5rem;
+        height: 2.5rem;
+        font-size: 1rem;
+    }
+
+    .archive-content {
+        padding-right: 0;
+    }
+
+    .archive-content strong {
+        min-width: 4rem;
+    }
+
+    .action-buttons {
+        position: static;
+        flex-direction: row;
+        transform: none;
+        justify-content: flex-end;
+        margin-top: 1rem;
+    }
+
+    .creation-info {
+        font-size: 0.8125rem;
+    }
 }
 
 /* 搜索框样式 */
@@ -259,27 +370,61 @@ button:hover,
     padding: 1.5rem;
     border-radius: var(--radius-md);
     text-align: center;
-    transition: transform 0.3s ease;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
 }
 
 .stat-item:hover {
     transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    background: linear-gradient(135deg, #f0f4ff 0%, #e8ecff 100%);
 }
 
-.stat-label {
+.stat-item:active {
+    transform: translateY(0);
+}
+
+.stat-detail {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg-secondary);
+    padding: 1rem;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+    text-align: left;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    z-index: 2;
+}
+
+.stat-detail.active {
+    transform: translateY(0);
+}
+
+.stat-detail-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #edf2f7;
+}
+
+.stat-detail-item:last-child {
+    border-bottom: none;
+}
+
+.stat-detail-label {
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.stat-detail-value {
     color: var(--text-secondary);
     font-size: 0.875rem;
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-}
-
-.stat-value {
-    color: var(--text-primary);
-    font-size: 1.5rem;
-    font-weight: 600;
-    background: var(--primary-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
 }
 
 /* 页面通用样式 */
@@ -564,7 +709,7 @@ button:hover,
 /* 移动端适配 */
 @media (max-width: 480px) {
     .login-container {
-        margin: 56px 0 0 0; /* 移动端导航栏通常更小 */
+        margin: 56px 0 0 0; /* 移动端导航栏通常小 */
         min-height: calc(100vh - 56px);
         padding: 0.5rem;
     }
@@ -743,5 +888,201 @@ button:hover,
 
     .menu-toggle.active span:last-child {
         transform: translateY(-8px) rotate(-45deg);
+    }
+}
+
+/* 主内容区域响应式布局 */
+@media (max-width: 768px) {
+    .container {
+        margin-top: 4rem;
+        padding: 1rem;
+    }
+
+    .form-group {
+        padding: 1rem;
+    }
+
+    .archive-item {
+        flex-direction: column;
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .archive-content {
+        padding-right: 0;
+    }
+
+    .action-buttons {
+        position: static;
+        flex-direction: row;
+        transform: none;
+        justify-content: flex-end;
+        margin-top: 1rem;
+    }
+
+    .search-box {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .search-box input,
+    .search-box button {
+        width: 100%;
+    }
+}
+
+/* 平板设备适配 */
+@media (min-width: 481px) and (max-width: 1024px) {
+    .container {
+        margin-top: 4.5rem;
+        padding: 1.5rem;
+    }
+
+    .login-container {
+        margin: 4rem 0 0 0;
+        min-height: calc(100vh - 4rem);
+    }
+
+    .login-box {
+        max-width: 480px;
+        padding: 2rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+}
+
+/* 编辑对话框响应式布局 */
+@media (max-width: 768px) {
+    .edit-content {
+        width: 95%;
+        padding: 1rem;
+        margin: 1rem;
+        max-height: 80vh;
+    }
+
+    .button-group {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .button-group button {
+        width: 100%;
+    }
+}
+
+/* 最新录入弹出卡片样式 */
+.latest-archive-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.latest-archive-popup.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.latest-archive-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+    padding: 0;
+}
+
+.latest-archive-popup.active .latest-archive-card {
+    transform: translateY(0);
+}
+
+.latest-archive-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #edf2f7;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    background: var(--bg-secondary);
+    z-index: 1;
+}
+
+.latest-archive-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+}
+
+.latest-archive-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    font-size: 1.25rem;
+    line-height: 1;
+    transition: all 0.2s ease;
+}
+
+.latest-archive-close:hover {
+    color: var(--text-primary);
+    transform: scale(1.1);
+}
+
+.latest-archive-content {
+    padding: 1.5rem;
+}
+
+.latest-archive-item {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #edf2f7;
+}
+
+.latest-archive-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.latest-archive-label {
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.latest-archive-value {
+    color: var(--text-secondary);
+}
+
+/* 移动端适配 */
+@media (max-width: 480px) {
+    .latest-archive-card {
+        width: 95%;
+        margin: 1rem;
+    }
+
+    .latest-archive-header {
+        padding: 1rem;
+    }
+
+    .latest-archive-content {
+        padding: 1rem;
     }
 } 

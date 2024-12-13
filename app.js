@@ -50,19 +50,150 @@ function parseCustomData(text) {
     return customData;
 }
 
+// 获取最新档案
+app.get('/archives/latest', verifyToken, async (req, res) => {
+    try {
+        const latestArchive = await Archive.findOne()
+            .sort({ createdAt: -1 })
+            .limit(1);
+
+        if (!latestArchive) {
+            return res.status(404).json({ message: '没有找到档案' });
+        }
+
+        res.json(latestArchive);
+    } catch (error) {
+        console.error('获取最新档案失败:', error);
+        res.status(500).json({ message: '服务器错误' });
+    }
+});
+
+// 获取档案列表（分页）
+app.get('/archives', verifyToken, async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        const archives = await Archive.find()
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        const total = await Archive.countDocuments();
+
+        res.json({
+            archives,
+            currentPage: page,
+            totalPages: Math.ceil(total / limit),
+            total
+        });
+    } catch (error) {
+        console.error('获取档案列表失败:', error);
+        res.status(500).json({ message: '服务器错误' });
+    }
+});
+
+// 搜索档案
+app.get('/archives/search', verifyToken, async (req, res) => {
+    try {
+        const keyword = req.query.keyword;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        if (!keyword) {
+            return res.status(400).json({ message: '请输入搜索关键词' });
+        }
+
+        const query = {
+            $or: [
+                { source: { $regex: keyword, $options: 'i' } },
+                { element: { $regex: keyword, $options: 'i' } },
+                { rawCustomData: { $regex: keyword, $options: 'i' } }
+            ]
+        };
+
+        const archives = await Archive.find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        const total = await Archive.countDocuments(query);
+
+        res.json({
+            archives,
+            currentPage: page,
+            totalPages: Math.ceil(total / limit),
+            total
+        });
+    } catch (error) {
+        console.error('搜索档案失败:', error);
+        res.status(500).json({ message: '服务器错误' });
+    }
+});
+
 // 获取档案统计信息
-app.get('/archives/stats', async (req, res) => {
-  try {
-    const totalCount = await Archive.countDocuments();
-    const latestArchive = await Archive.findOne().sort({ createdAt: -1 });
-    
-    res.json({
-      totalCount,
-      latestArchiveTime: latestArchive ? latestArchive.createdAt : null
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+app.get('/archives/stats', verifyToken, async (req, res) => {
+    try {
+        const totalCount = await Archive.countDocuments();
+        const latestArchive = await Archive.findOne()
+            .sort({ createdAt: -1 })
+            .select('createdAt');
+
+        res.json({
+            totalCount,
+            latestArchiveTime: latestArchive ? latestArchive.createdAt : null
+        });
+    } catch (error) {
+        console.error('获取统计信息失败:', error);
+        res.status(500).json({ message: '服务器错误' });
+    }
+});
+
+// 修改档案
+app.put('/archives/:id', verifyToken, async (req, res) => {
+    try {
+        const { rawCustomData } = req.body;
+
+        const archive = await Archive.findById(req.params.id);
+        
+        if (!archive) {
+            return res.status(404).json({ message: '档案不存在' });
+        }
+
+        // 检查权限：只有管理员或创建者可以修改
+        if (req.user.role !== 'admin' && archive.createdBy !== req.user.username) {
+            return res.status(403).json({ message: '没有权限修改此档案' });
+        }
+
+        // 解析自定义数据
+        const customData = parseCustomData(rawCustomData);
+
+        // 只更新自定义数据部分，保持其他字段不变
+        archive.customData = Object.fromEntries(customData);
+        archive.rawCustomData = rawCustomData;
+
+        await archive.save();
+        res.json(archive);
+    } catch (error) {
+        console.error('修改档案失败:', error);
+        res.status(500).json({ message: '服务器错误' });
+    }
+});
+
+// 删除档案（仅管理员）
+app.delete('/archives/:id', verifyToken, isAdmin, async (req, res) => {
+    try {
+        const archive = await Archive.findByIdAndDelete(req.params.id);
+        if (!archive) {
+            return res.status(404).json({ message: '档案不存在' });
+        }
+        res.json({ message: '档案已删除' });
+    } catch (error) {
+        console.error('删除档案失败:', error);
+        res.status(500).json({ message: '服务器错误' });
+    }
 });
 
 // 修改录入档案的路由
@@ -76,7 +207,7 @@ app.post('/archives', verifyToken, async (req, res) => {
                         req.socket.remoteAddress ||
                         req.connection.socket.remoteAddress;
         
-        // 解析自定义数据
+        // 解析定义数据
         const customData = parseCustomData(rawCustomData);
         
         // 创建新档案
@@ -97,83 +228,6 @@ app.post('/archives', verifyToken, async (req, res) => {
     }
 });
 
-// 获取档案列表（分页）
-app.get('/archives', verifyToken, async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-
-    const archives = await Archive.find()
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    const total = await Archive.countDocuments();
-
-    res.json({
-      archives,
-      pagination: {
-        current: page,
-        total: Math.ceil(total / limit),
-        totalRecords: total
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// 修改模糊搜索档案的路由
-app.get('/archives/search', verifyToken, async (req, res) => {
-  try {
-    const { keyword } = req.query;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-
-    let query = {};
-    if (keyword) {
-      query = {
-        $or: [
-          { source: new RegExp(keyword, 'i') },
-          { element: new RegExp(keyword, 'i') },
-          { rawCustomData: new RegExp(keyword, 'i') }
-        ]
-      };
-    }
-
-    console.log('Search query:', query);
-
-    const archives = await Archive.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    console.log('Search results:', archives);
-
-    const total = await Archive.countDocuments(query);
-
-    const response = {
-      archives: archives || [],
-      pagination: {
-        current: page,
-        total: Math.ceil(total / limit),
-        totalRecords: total
-      }
-    };
-
-    console.log('Response data:', response);
-    res.json(response);
-  } catch (error) {
-    console.error('Search error:', error);
-    res.status(500).json({ 
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-  }
-});
-
 // 添加获取单个档案的路由
 app.get('/archives/:id', async (req, res) => {
   try {
@@ -185,66 +239,6 @@ app.get('/archives/:id', async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-});
-
-// 添加检查修改权限的中间件
-const checkEditPermission = async (req, res, next) => {
-    try {
-        const archive = await Archive.findById(req.params.id);
-        if (!archive) {
-            return res.status(404).json({ message: '档案不存在' });
-        }
-
-        // 管理员可以修改所有档案
-        if (req.user.role === 'admin') {
-            return next();
-        }
-
-        // 普通用户只能修改自己创建的档案
-        if (archive.createdBy === req.user.username) {
-            return next();
-        }
-
-        return res.status(403).json({ message: '权限不足：只能修改自己创建的档案' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// 修改档案路由，添加权限检查
-app.put('/archives/:id', verifyToken, checkEditPermission, async (req, res) => {
-    try {
-        const { rawCustomData } = req.body;
-        const customData = parseCustomData(rawCustomData);
-        
-        // 查找现有档案
-        const archive = await Archive.findById(req.params.id);
-        
-        // 只更新自定义数据部分，保持其他字段不变
-        archive.customData = Object.fromEntries(customData);
-        archive.rawCustomData = rawCustomData;
-        
-        // 保存更新
-        const updatedArchive = await archive.save({ validateModifiedOnly: true });  // 只验证修改的字段
-        res.json(updatedArchive);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
-    }
-});
-
-// 删除档案路由，只允许管理员操作
-app.delete('/archives/:id', verifyToken, isAdmin, async (req, res) => {
-    try {
-        const archive = await Archive.findById(req.params.id);
-        if (!archive) {
-            return res.status(404).json({ message: '档案不存在' });
-        }
-        
-        await Archive.deleteOne({ _id: req.params.id });
-        res.json({ message: '档案已删除' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
 });
 
 // 用户注册
