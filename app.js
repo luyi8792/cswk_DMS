@@ -174,8 +174,9 @@ app.put('/archives/:id', verifyToken, async (req, res) => {
         archive.customData = Object.fromEntries(customData);
         archive.rawCustomData = rawCustomData;
 
-        await archive.save();
-        res.json(archive);
+        // 保存更新
+        const updatedArchive = await archive.save({ validateModifiedOnly: true });
+        res.json(updatedArchive);
     } catch (error) {
         console.error('修改档案失败:', error);
         res.status(500).json({ message: '服务器错误' });

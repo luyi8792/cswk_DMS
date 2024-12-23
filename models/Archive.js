@@ -13,11 +13,13 @@ const archiveSchema = new mongoose.Schema({
     // 基础数据
     source: {
         type: String,
-        required: true
+        required: true,
+        maxlength: [64, '来源长度不能超过64个字符']
     },
     element: {
         type: String,
-        required: true
+        required: true,
+        maxlength: [64, '要素长度不能超过64个字符']
     },
     // 自定义数据
     customData: {

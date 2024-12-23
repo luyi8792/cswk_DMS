@@ -104,26 +104,47 @@ function createArchiveElement(archive, number) {
 
     // 基础信息
     content.innerHTML = `
-        <p><strong>来源：</strong>${archive.source}</p>
-        <p><strong>要素：</strong>${archive.element}</p>
-        <div class="creation-info">
-            <p><strong>录入时间：</strong>${new Date(archive.createdAt).toLocaleString()}</p>
-            <p><strong>录入账号：</strong>${archive.createdBy}</p>
-            <p><strong>录入IP：</strong>${archive.clientIP}</p>
-        </div>
+        <p>
+            <strong>来源：</strong>
+            <span title="${archive.source}">${truncateText(archive.source, 64)}</span>
+        </p>
+        <p>
+            <strong>要素：</strong>
+            <span title="${archive.element}">${truncateText(archive.element, 64)}</span>
+        </p>
     `;
 
-    // 自定义数据
+    // 自定义数据（只显示前3行）
     if (archive.customData && Object.keys(archive.customData).length > 0) {
-        const customDataHtml = Object.entries(archive.customData)
-            .map(([key, value]) => `<p><strong>${key}：</strong>${value}</p>`)
+        const entries = Object.entries(archive.customData);
+        const displayEntries = entries.slice(0, 3);
+        const remainingCount = entries.length - 3;
+
+        const customDataHtml = displayEntries
+            .map(([key, value]) => `
+                <p>
+                    <strong>${key}：</strong>
+                    <span>${value}</span>
+                </p>
+            `)
             .join('');
-        content.innerHTML += `<div class="custom-data">${customDataHtml}</div>`;
+            
+        content.innerHTML += `
+            <div class="custom-data">
+                ${customDataHtml}
+                ${remainingCount > 0 ? `<p class="more-data">还有 ${remainingCount} 项...</p>` : ''}
+            </div>`;
     }
 
     // 操作按钮
     const actionButtons = document.createElement('div');
     actionButtons.className = 'action-buttons';
+
+    // 详情按钮
+    const detailButton = document.createElement('button');
+    detailButton.className = 'detail-btn';
+    detailButton.innerHTML = '<i class="fas fa-info-circle"></i> 详情';
+    detailButton.onclick = () => showArchiveDetail(archive);
 
     // 编辑按钮
     const editButton = document.createElement('button');
@@ -137,6 +158,7 @@ function createArchiveElement(archive, number) {
     deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i> 删除';
     deleteButton.onclick = () => deleteArchive(archive._id);
 
+    actionButtons.appendChild(detailButton);
     actionButtons.appendChild(editButton);
     // 只有管理员才能看到删除按钮
     if (isAdmin()) {
@@ -147,6 +169,13 @@ function createArchiveElement(archive, number) {
     archiveItem.appendChild(content);
     archiveItem.appendChild(actionButtons);
     return archiveItem;
+}
+
+// 文本截断函数
+function truncateText(text, maxLength) {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
 }
 
 // 检查是否为管理员
@@ -541,7 +570,7 @@ function closeEditDialog() {
 
 // 删除档案
 async function deleteArchive(id) {
-    if (!confirm('确定要删除这条档案吗？')) {
+    if (!confirm('确定要删除��条档案吗？')) {
         return;
     }
 
@@ -766,7 +795,7 @@ async function showLatestArchive() {
             });
         }
     } catch (error) {
-        console.error('获取最新���案失败:', error);
+        console.error('获取最新档案失败:', error);
         alert('获取最新档案失败，请重试');
     }
 }
@@ -858,6 +887,71 @@ async function deleteArchive(id) {
         alert('删除成功');
     } catch (error) {
         console.error('删除档案失败:', error);
-        alert('删除档案失败��请重试');
+        alert('删除档案失败，请重试');
+    }
+}
+
+// 显示档案详情
+function showArchiveDetail(archive) {
+    const popup = document.createElement('div');
+    popup.className = 'archive-detail-popup';
+    
+    popup.innerHTML = `
+        <div class="archive-detail-card">
+            <div class="archive-detail-header">
+                <h3>档案详情</h3>
+                <button class="archive-detail-close" onclick="closeArchiveDetail()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="archive-detail-content">
+                <div class="detail-section">
+                    <h4>基础信息</h4>
+                    <p><strong>来源：</strong>${archive.source}</p>
+                    <p><strong>要素：</strong>${archive.element}</p>
+                </div>
+                
+                <div class="detail-section">
+                    <h4>录入信息</h4>
+                    <p><strong>录入时间：</strong>${new Date(archive.createdAt).toLocaleString()}</p>
+                    <p><strong>录入账号：</strong>${archive.createdBy}</p>
+                    <p><strong>录入IP：</strong>${archive.clientIP}</p>
+                </div>
+                
+                ${archive.customData && Object.keys(archive.customData).length > 0 ? `
+                    <div class="detail-section">
+                        <h4>自定义数据</h4>
+                        ${Object.entries(archive.customData)
+                            .map(([key, value]) => `<p><strong>${key}：</strong>${value}</p>`)
+                            .join('')}
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(popup);
+    
+    // 添加点击外部关闭功能
+    popup.addEventListener('click', (e) => {
+        if (e.target === popup) {
+            closeArchiveDetail();
+        }
+    });
+
+    // 显示弹出层
+    requestAnimationFrame(() => {
+        popup.classList.add('active');
+    });
+}
+
+// 关闭档案详情
+function closeArchiveDetail() {
+    const popup = document.querySelector('.archive-detail-popup');
+    if (popup) {
+        popup.classList.remove('active');
+        setTimeout(() => {
+            popup.remove();
+        }, 300);
     }
 }
