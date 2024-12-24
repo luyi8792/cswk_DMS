@@ -269,6 +269,15 @@ app.post('/archives', verifyToken, async (req, res) => {
         console.log('接收到的档案数据:', req.body);
         const { source, element, rawCustomData } = req.body;
         
+        // 检查要素是否已存在
+        const existingArchive = await Archive.findOne({ element: element });
+        if (existingArchive) {
+            return res.status(409).json({
+                message: '要素已存在',
+                existingArchive: existingArchive
+            });
+        }
+        
         // 处理标签数据
         let tags = [];
         try {

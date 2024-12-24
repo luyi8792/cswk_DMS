@@ -420,7 +420,7 @@ function displayArchives(archives, pagination, containerId, paginationId) {
         container.appendChild(archiveElement);
     });
 
-    // 更新分页
+    // 更新���页
     const paginationContainer = document.getElementById(paginationId);
     if (paginationContainer && pagination) {
         updatePagination(paginationContainer, {
@@ -675,7 +675,7 @@ function updateSelectedTags(context) {
     selectedTagsInput.value = JSON.stringify(selectedTags);
 }
 
-// 添加汉堡菜单控制函���
+// 添加汉堡菜单控制函数
 function toggleMenu() {
     const menuToggle = document.querySelector('.menu-toggle');
     const navMenu = document.querySelector('.nav-menu');
@@ -925,7 +925,7 @@ function updateUI() {
     const username = localStorage.getItem('username');
     const userInfo = document.getElementById('username');
     if (username && userInfo) {
-        userInfo.textContent = `${username} (${isAdmin ? '管理员' : '普通���户'})`;
+        userInfo.textContent = `${username} (${isAdmin ? '管理员' : '普通用户'})`;
     }
 }
 
@@ -1005,7 +1005,7 @@ async function showLatestArchive(archive) {
                 </div>
                 <div class="latest-archive-content">
                     <p><strong>来源：</strong>${archive.source || ''}</p>
-                    <p><strong>要素：</strong>${archive.element || ''}</p>
+                    <p><strong>要���：</strong>${archive.element || ''}</p>
                     ${tagsHtml}
                     ${customDataHtml}
                     <div class="creation-info">
@@ -1165,17 +1165,27 @@ async function deleteArchive(id) {
 }
 
 // 显示档案详情
-async function showArchiveDetail(archiveId) {
+async function showArchiveDetail(archiveIdOrObject) {
     try {
-        const response = await fetchWithAuth(`/archives/${archiveId}`);
-        if (!response.ok) {
-            throw new Error('获取档案详情���败');
+        let archive;
+        
+        // 判断传入的是ID还是档案对象
+        if (typeof archiveIdOrObject === 'string') {
+            // 如果是ID，需要从服务器获取档案数据
+            const response = await fetchWithAuth(`/archives/${archiveIdOrObject}`);
+            if (!response.ok) {
+                throw new Error('获取档案详情失败');
+            }
+            archive = await response.json();
+        } else {
+            // 如果是档案对象，直接使用
+            archive = archiveIdOrObject;
         }
-        const archive = await response.json();
         
         const popup = document.createElement('div');
         popup.className = 'archive-detail-popup';
         
+        // 构建标签HTML
         const tagsHtml = archive.tags && archive.tags.length > 0 
             ? `<div class="detail-section">
                 <h4>标签</h4>
@@ -1185,6 +1195,7 @@ async function showArchiveDetail(archiveId) {
                </div>`
             : '';
             
+        // 构建自定义数据HTML
         const customDataHtml = archive.rawCustomData 
             ? `<div class="detail-section">
                 <h4>自定义数据</h4>
@@ -1208,6 +1219,7 @@ async function showArchiveDetail(archiveId) {
                     </div>
                     
                     ${tagsHtml}
+                    ${customDataHtml}
                     
                     <div class="detail-section">
                         <h4>录入信息</h4>
@@ -1215,8 +1227,6 @@ async function showArchiveDetail(archiveId) {
                         <p><strong>录入账号：</strong>${archive.createdBy || ''}</p>
                         <p><strong>客户端IP：</strong>${archive.clientIP || ''}</p>
                     </div>
-                    
-                    ${customDataHtml}
                 </div>
             </div>
         `;
@@ -1243,9 +1253,7 @@ function closeArchiveDetail() {
     const popup = document.querySelector('.archive-detail-popup');
     if (popup) {
         popup.classList.remove('active');
-        setTimeout(() => {
-            popup.remove();
-        }, 300);
+        setTimeout(() => popup.remove(), 300);
     }
 }
 
@@ -1270,7 +1278,7 @@ async function addCustomTag(context) {
         });
 
         if (response.ok) {
-            // 添加到���选标签中
+            // 添加到选标签中
             selectTag(tagName, context);
             input.value = '';
             // 重新加载标签池
@@ -1515,14 +1523,19 @@ async function submitArchive(e) {
         });
 
         console.log('收到响应:', response);
-        if (!response.ok) {
-            const error = await response.json();
-            console.error('服务器返回错误:', error);
-            throw new Error(error.message || '创建档案失败');
-        }
+        const responseData = await response.json();
 
-        const savedArchive = await response.json();
-        console.log('保存成功，返回数据:', savedArchive);
+        if (!response.ok) {
+            if (response.status === 409) {
+                // 要素已存在的情况
+                const result = confirm('该要素已存在，是否查看已有档案？');
+                if (result) {
+                    showArchiveDetail(responseData.existingArchive);
+                }
+                return; // 直接返回，不抛出错误
+            }
+            throw new Error(responseData.message || '创建档案失败');
+        }
 
         // 清空表单
         console.log('正在清空表单...');
@@ -1534,7 +1547,7 @@ async function submitArchive(e) {
         
         // 显示最新创建的档案
         console.log('显示最新创建的档案...');
-        showLatestArchive(savedArchive);
+        showLatestArchive(responseData);
         
         // 重新加载档案列表
         console.log('重新加载档案列表...');
@@ -1555,7 +1568,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (archiveForm) {
         console.log('绑定表单提交事件...');
         archiveForm.addEventListener('submit', submitArchive);
-        console.log('表单提交事件绑定完成');
+        console.log('表单提交事���绑定完成');
     } else {
         console.error('未找到表单元素！');
     }

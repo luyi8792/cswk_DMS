@@ -1,4 +1,12 @@
 #!/bin/bash
+#建议的提交说明格式：
+#feat: 新功能
+#fix: 修复bug
+#docs: 文档更新
+#style: 代码格式调整
+#refactor: 代码重构
+#test: 添加测试
+#chore: 其他修改
 
 # 输出时间戳函数
 timestamp() {
@@ -9,7 +17,17 @@ timestamp() {
 REPO_URL="git@github.com:luyi8792/cswk_DMS.git"
 BRANCH="main"
 
+# 获取提交说明
+if [ $# -eq 0 ]; then
+    # 如果没有提供参数，使用默认的提交说明
+    COMMIT_MSG="Update: $(date '+%Y-%m-%d %H:%M:%S')"
+else
+    # 使用提供的参数作为提交说明
+    COMMIT_MSG="$1"
+fi
+
 echo "[$(timestamp)] 开始上传代码..."
+echo "[$(timestamp)] 提交说明: ${COMMIT_MSG}"
 
 # 检查是否已经初始化git仓库
 if [ ! -d ".git" ]; then
@@ -30,7 +48,7 @@ if [ -n "$(git status --porcelain)" ]; then
     
     # 提交更改
     echo "[$(timestamp)] 提交更改..."
-    git commit -m "Initial commit: $(date '+%Y-%m-%d %H:%M:%S')"
+    git commit -m "${COMMIT_MSG}"
 fi
 
 # 创建并切换到main分支
@@ -53,6 +71,7 @@ git push -u origin main || {
 # 检查结果
 if [ $? -eq 0 ]; then
     echo "[$(timestamp)] 代码上传成功！"
+    echo "[$(timestamp)] 提交说明: ${COMMIT_MSG}"
 else
     echo "[$(timestamp)] 代码上传失败，请检查错误信息"
     exit 1
