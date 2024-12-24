@@ -596,7 +596,7 @@ async function loadTags(context = 'input') {
             </span>
         `).join('');
         
-        // 如果是设置页面，默���展开
+        // 如果是设置页面，默认展开
         if (context === 'settings') {
             tagPool.classList.add('expanded');
             const toggleButton = tagPool.querySelector('.tag-pool-toggle');
@@ -1081,7 +1081,7 @@ async function showEditDialog(archiveId) {
                 </div>
                 <div class="form-group">
                     <label>自定义数据：</label>
-                    <textarea id="editRawCustomData" rows="10" placeholder="请输入键值对格式的数据，每行一个，使用冒号分隔">${archive.rawCustomData || ''}</textarea>
+                    <textarea id="editRawCustomData" rows="10" placeholder="请输入键值对格式的数据，每行一个，使用冒号��隔">${archive.rawCustomData || ''}</textarea>
                 </div>
                 <div class="button-group">
                     <button onclick="updateArchive('${archive._id}')" class="primary-button">保存</button>
@@ -1292,7 +1292,7 @@ async function addCustomTag(context) {
             loadTags(context);
         } else {
             const error = await response.json();
-            if (error.message === '标签已存���') {
+            if (error.message === '标签已存在') {
                 // 如果标签已存在，直接添加到已选标签中
                 selectTag(tagName, context);
                 input.value = '';
@@ -1469,7 +1469,7 @@ async function loadArchivesList(page = 1) {
 
         const data = await response.json();
         
-        // 构建分��数据
+        // 构建分页数据
         const pagination = {
             current: parseInt(page),
             pageSize: 10,
@@ -1611,3 +1611,96 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('未找到表单元素！');
     }
 });
+
+// 添加子档案条目
+function addSubArchiveEntry() {
+    const subArchives = document.getElementById('subArchives');
+    const entryId = Date.now(); // 使用时间戳作为临时ID
+    const entryNumber = subArchives.children.length + 1; // 计算当前子档案的序号
+    
+    const entry = document.createElement('div');
+    entry.className = 'sub-archive-entry';
+    entry.dataset.id = entryId;
+    
+    entry.innerHTML = `
+        <div class="sub-archive-number">${entryNumber}</div>
+        <textarea placeholder="请输入子档案内容..."></textarea>
+        <div class="sub-archive-images"></div>
+        <div class="sub-archive-controls">
+            <div class="image-upload">
+                <input type="file" id="images_${entryId}" multiple accept="image/*" onchange="handleImageUpload(event, ${entryId})">
+                <label for="images_${entryId}">
+                    <i class="fas fa-image"></i> 上传图片
+                </label>
+                <span class="image-count">(0张)</span>
+            </div>
+            <button type="button" class="remove-entry" onclick="removeSubArchiveEntry(${entryId})">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    subArchives.appendChild(entry);
+    updateSubArchiveNumbers(); // 更新所有子档案的序号
+}
+
+// 移除子档案条目
+function removeSubArchiveEntry(entryId) {
+    const entry = document.querySelector(`.sub-archive-entry[data-id="${entryId}"]`);
+    if (entry) {
+        entry.remove();
+        updateSubArchiveNumbers(); // 更新所有子档案的序号
+    }
+}
+
+// 更新所有子档案的序号
+function updateSubArchiveNumbers() {
+    const subArchives = document.getElementById('subArchives');
+    const entries = subArchives.querySelectorAll('.sub-archive-entry');
+    entries.forEach((entry, index) => {
+        const numberDiv = entry.querySelector('.sub-archive-number');
+        if (numberDiv) {
+            numberDiv.textContent = index + 1;
+        }
+    });
+}
+
+// 处理图片上传
+function handleImageUpload(event, entryId) {
+    const files = event.target.files;
+    const entry = document.querySelector(`.sub-archive-entry[data-id="${entryId}"]`);
+    const imagesContainer = entry.querySelector('.sub-archive-images');
+    const imageCountSpan = entry.querySelector('.image-count');
+    
+    // 处理新上传的图片
+    Array.from(files).forEach(file => {
+        // 检查文件类型
+        if (!file.type.startsWith('image/')) {
+            alert('请只上传图片文件');
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const imagePreview = document.createElement('div');
+            imagePreview.className = 'sub-archive-image-preview';
+            imagePreview.innerHTML = `
+                <img src="${e.target.result}" alt="预览图片">
+                <button type="button" class="remove-image" onclick="this.parentElement.remove(); updateImageCount(${entryId})">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            imagesContainer.appendChild(imagePreview);
+            updateImageCount(entryId);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+// 更新图片计数
+function updateImageCount(entryId) {
+    const entry = document.querySelector(`.sub-archive-entry[data-id="${entryId}"]`);
+    const count = entry.querySelectorAll('.sub-archive-image-preview').length;
+    const countSpan = entry.querySelector('.image-count');
+    countSpan.textContent = `(${count}张)`;
+}

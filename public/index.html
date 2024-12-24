@@ -67,6 +67,17 @@
                     <textarea id="rawCustomData" name="rawCustomData" rows="10" 
                         placeholder="请输入键值对格式的数据，每行一个，使用冒号分隔，例如：&#10;位置: 北京&#10;时间: 2023年"></textarea>
                 </div>
+                
+                <div class="form-group">
+                    <label>子档案：</label>
+                    <div id="subArchives">
+                        <!-- 子档案条目将在这里动态添加 -->
+                    </div>
+                    <button type="button" onclick="addSubArchiveEntry()" class="secondary-button">
+                        <i class="fas fa-plus"></i> 添加子档案
+                    </button>
+                </div>
+
                 <div class="form-group">
                     <label>标签：</label>
                     <div class="selected-tags" id="selectedTags"></div>

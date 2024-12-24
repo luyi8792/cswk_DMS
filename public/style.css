@@ -888,7 +888,7 @@ button:hover,
     transition: all 0.3s ease;
 }
 
-/* 移动���导航栏适配 */
+/* 移动端导航栏适配 */
 @media (max-width: 768px) {
     .menu-toggle {
         display: flex;
@@ -1245,7 +1245,7 @@ button:hover,
     display: inline-block;
 }
 
-/* 档案列表优化 */
+/* ��案列表优化 */
 .more-data {
     color: var(--text-secondary);
     font-size: 0.875rem;
@@ -1707,4 +1707,153 @@ button:hover,
         width: 100%;
         margin-top: 8px;
     }
+}
+
+/* 子档案样式 */
+.sub-archive-entry {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+    position: relative;
+}
+
+.sub-archive-entry textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-sm);
+    margin-bottom: 1rem;
+    resize: vertical;
+}
+
+.sub-archive-entry textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.sub-archive-images {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.sub-archive-image-preview {
+    position: relative;
+    padding-top: 100%;
+    background: #f7fafc;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.sub-archive-image-preview img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sub-archive-image-preview .remove-image {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    font-size: 14px;
+}
+
+.sub-archive-controls {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sub-archive-controls .image-upload {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sub-archive-controls input[type="file"] {
+    display: none;
+}
+
+.sub-archive-controls label {
+    background: var(--secondary-gradient);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sub-archive-controls .remove-entry {
+    background: #e53e3e;
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+}
+
+.secondary-button {
+    background: var(--secondary-gradient);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.secondary-button:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    opacity: 0.95;
+}
+
+.sub-archive-number {
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    width: 24px;
+    height: 24px;
+    background: var(--primary-gradient);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 500;
+    box-shadow: var(--shadow-sm);
 } 
