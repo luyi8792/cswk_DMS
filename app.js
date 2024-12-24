@@ -6,6 +6,7 @@ const User = require('./models/User');
 const { generateToken, verifyToken, isAdmin } = require('./middleware/auth');
 const Tag = require('./models/Tag');
 const path = require('path');
+const multer = require('multer');
 
 const app = express();
 app.use(express.json());
@@ -24,6 +25,68 @@ const uploadDir = path.join(__dirname, 'public/uploads/archives');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
+
+// 配置 multer 存储
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        // 根据主档案ID和子档案ID创建目录
+        const archiveId = req.params.archiveId;
+        const subArchiveId = req.params.subArchiveId || 'temp';
+        const dir = path.join(uploadDir, archiveId, subArchiveId);
+        
+        // 确保目录存在
+        fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+    },
+    filename: function (req, file, cb) {
+        // 生成文件名：时间戳 + 随机数 + 原始扩展名
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        cb(null, uniqueSuffix + ext);
+    }
+});
+
+// 文件过滤器
+const fileFilter = (req, file, cb) => {
+    // 检查文件类型
+    if (!file.mimetype.match(/^image\/(jpeg|png|gif)$/)) {
+        return cb(new Error('只允许上传 JPG、PNG 或 GIF 格式的图片'), false);
+    }
+    
+    // 检查文件大小（在multer配置中设置）
+    cb(null, true);
+};
+
+// 创建 multer 实例
+const upload = multer({
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: {
+        fileSize: 2 * 1024 * 1024, // 限制文件大小为2MB
+        files: 10 // 限制每次最多上传10个文件
+    }
+});
+
+// 错误处理中间件
+const handleUploadError = (err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ message: '文件大小不能超过2MB' });
+        }
+        if (err.code === 'LIMIT_FILE_COUNT') {
+            return res.status(400).json({ message: '一次最多只能上传10个文件' });
+        }
+        return res.status(400).json({ message: '文件上传失败：' + err.message });
+    }
+    
+    if (err.message.includes('只允许上传')) {
+        return res.status(400).json({ message: err.message });
+    }
+    
+    next(err);
+};
+
+app.use(handleUploadError);
 
 // 连接数据库
 mongoose.connect('mongodb://root:zhsbkczj@mongodb-mongodb.ns-5a3vu6yx.svc:27017')
@@ -66,7 +129,7 @@ function parseCustomData(text) {
     return customData;
 }
 
-// 获取最新档案
+// 获取���新档案
 app.get('/archives/latest', verifyToken, async (req, res) => {
     try {
         const latestArchive = await Archive.findOne()
@@ -387,7 +450,7 @@ app.post('/auth/register', async (req, res) => {
     try {
         const { username, password, role } = req.body;
         
-        // 检查用户是否已存在
+        // 检查��户是否已存在
         const existingUser = await User.findOne({ username });
         if (existingUser) {
             return res.status(400).json({ message: '用户名已存在' });
@@ -409,7 +472,7 @@ app.post('/auth/register', async (req, res) => {
     }
 });
 
-// 用���登录
+// 用登录
 app.post('/auth/login', async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -489,7 +552,7 @@ app.delete('/tags/:id', verifyToken, isAdmin, async (req, res) => {
             return res.status(404).json({ message: '标签不存在' });
         }
         
-        // 从所有使用该标签���档案中移除
+        // 从所有使用该标签的档案中移除
         await Archive.updateMany(
             { tags: tag.name },
             { $pull: { tags: tag.name } }
