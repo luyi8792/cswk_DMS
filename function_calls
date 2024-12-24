@@ -1,0 +1,503 @@
+<invoke name="edit_file">
+<parameter name="target_file">public/script.js</parameter>
+<parameter name="instructions">我将添加标签相关的JavaScript功能实现。</parameter>
+<parameter name="code_edit">// ... 现有代码 ...
+
+// 标签相关的全局变量
+let availableTags = [];
+let selectedTags = {
+    input: new Set(),
+    search: new Set()
+};
+
+// 加载标签池
+async function loadTags(context = 'input') {
+    try {
+        const response = await fetchWithAuth('/tags');
+        if (!response.ok) {
+            throw new Error('获取标签失败');
+        }
+        
+        const tags = await response.json();
+        availableTags = tags;
+        
+        // 更新标签池显示
+        const poolElement = document.getElementById(`${context}TagsPool`);
+        poolElement.innerHTML = '';
+        
+        tags.forEach(tag => {
+            if (!selectedTags[context].has(tag.name)) {
+                const tagElement = createTagElement(tag.name, true, context);
+                poolElement.appendChild(tagElement);
+            }
+        });
+    } catch (error) {
+        console.error('加载标签失败:', error);
+    }
+}
+
+// 创建标签元素
+function createTagElement(tagName, selectable = false, context = 'input') {
+    const tag = document.createElement('span');
+    tag.className = `tag ${selectable ? 'selectable' : ''}`;
+    
+    if (selectable) {
+        tag.onclick = () => selectTag(tagName, context);
+        tag.textContent = tagName;
+    } else {
+        tag.innerHTML = `${tagName}<span class="remove-tag" onclick="removeTag('${tagName}', '${context}')">&times;</span>`;
+    }
+    
+    return tag;
+}
+
+// 选择标签
+function selectTag(tagName, context) {
+    selectedTags[context].add(tagName);
+    updateTagsDisplay(context);
+}
+
+// 移除标签
+function removeTag(tagName, context) {
+    selectedTags[context].delete(tagName);
+    updateTagsDisplay(context);
+}
+
+// 更新标签显示
+function updateTagsDisplay(context) {
+    // 更新已选标签
+    const selectedContainer = document.getElementById(`${context}SelectedTags`);
+    selectedContainer.innerHTML = '';
+    selectedTags[context].forEach(tagName => {
+        const tagElement = createTagElement(tagName, false, context);
+        selectedContainer.appendChild(tagElement);
+    });
+    
+    // 更新标签池
+    const poolElement = document.getElementById(`${context}TagsPool`);
+    poolElement.innerHTML = '';
+    availableTags.forEach(tag => {
+        if (!selectedTags[context].has(tag.name)) {
+            const tagElement = createTagElement(tag.name, true, context);
+            poolElement.appendChild(tagElement);
+        }
+    });
+}
+
+// 添加自定义标签
+function addCustomTag(context) {
+    const input = document.getElementById('newTag');
+    const tagName = input.value.trim();
+    
+    if (tagName) {
+        selectTag(tagName, context);
+        input.value = '';
+    }
+}
+
+// 修改档案创建函数
+document.getElementById('archiveForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = {
+        source: document.getElementById('source').value,
+        element: document.getElementById('element').value,
+        rawCustomData: document.getElementById('customDataText').value,
+        tags: Array.from(selectedTags.input)
+    };
+
+    try {
+        const response = await fetchWithAuth('/archives', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+
+        if (response.ok) {
+            alert('档案添加成功！');
+            document.getElementById('archiveForm').reset();
+            selectedTags.input.clear();
+            updateTagsDisplay('input');
+        } else {
+            const error = await response.json();
+            alert('错误：' + error.message);
+        }
+    } catch (error) {
+        alert('提交失败：' + error.message);
+    }
+});
+
+// 修改搜索函数
+async function searchArchives(page = 1) {
+    const keyword = document.getElementById('searchKeyword').value.trim();
+    const tags = Array.from(selectedTags.search);
+    
+    try {
+        const queryParams = new URLSearchParams({
+            page: page,
+            keyword: keyword
+        });
+        
+        if (tags.length > 0) {
+            queryParams.append('tags', tags.join(','));
+        }
+        
+        const response = await fetchWithAuth(`/archives/search?${queryParams}`);
+        if (!response.ok) {
+            throw new Error('搜索失败');
+        }
+
+        const data = await response.json();
+        displaySearchResults(data);
+    } catch (error) {
+        console.error('搜索失败:', error);
+        alert('搜索失败，请重试');
+    }
+}
+
+// 修改档案展示函数
+function createArchiveElement(archive, number) {
+    const archiveItem = document.createElement('div');
+    archiveItem.className = 'archive-item';
+
+    // 编号
+    const numberElement = document.createElement('div');
+    numberElement.className = 'archive-number';
+    numberElement.textContent = String(number).padStart(2, '0');
+
+    // 标签显示
+    const tagsElement = document.createElement('div');
+    tagsElement.className = 'archive-tags';
+    if (archive.tags && archive.tags.length > 0) {
+        const displayTags = archive.tags.slice(0, 3);
+        displayTags.forEach(tag => {
+            const tagSpan = document.createElement('span');
+            tagSpan.className = 'tag';
+            tagSpan.textContent = tag;
+            tagsElement.appendChild(tagSpan);
+        });
+        
+        if (archive.tags.length > 3) {
+            const moreSpan = document.createElement('span');
+            moreSpan.className = 'tag';
+            moreSpan.textContent = `+${archive.tags.length - 3}`;
+            tagsElement.appendChild(moreSpan);
+        }
+    }
+
+    // 创建档案内容
+    const content = document.createElement('div');
+    content.className = 'archive-content';
+    
+    // 添加标签到内容区域顶部
+    content.appendChild(tagsElement);
+
+    // ... 其他内容保持不变 ...
+    content.innerHTML += `
+        <p><strong>来源：</strong><span>${archive.source}</span></p>
+        <p><strong>要素：</strong><span>${archive.element}</span></p>
+    `;
+
+    // 自定义数据
+    if (archive.customData && Object.keys(archive.customData).length > 0) {
+        const entries = Object.entries(archive.customData);
+        const displayEntries = entries.slice(0, 3);
+        const remainingCount = entries.length - 3;
+
+        const customDataHtml = displayEntries
+            .map(([key, value]) => `
+                <p><strong>${key}：</strong><span>${value}</span></p>
+            `)
+            .join('');
+            
+        content.innerHTML += `
+            <div class="custom-data">
+                ${customDataHtml}
+                ${remainingCount > 0 ? `<p class="more-data">还有 ${remainingCount} 项...</p>` : ''}
+            </div>`;
+    }
+
+    // 操作按钮
+    const actionButtons = document.createElement('div');
+    actionButtons.className = 'action-buttons';
+    
+    // 详情按钮
+    const detailButton = document.createElement('button');
+    detailButton.className = 'detail-btn';
+    detailButton.innerHTML = '<i class="fas fa-info-circle"></i> 详情';
+    detailButton.onclick = () => showArchiveDetail(archive);
+
+    // 编辑按钮
+    const editButton = document.createElement('button');
+    editButton.className = 'edit-btn';
+    editButton.innerHTML = '<i class="fas fa-edit"></i> 修改';
+    editButton.onclick = () => showEditDialog(archive);
+
+    // 删除按钮（仅管理员可见）
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'delete-btn';
+    deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i> 删除';
+    deleteButton.onclick = () => deleteArchive(archive._id);
+
+    actionButtons.appendChild(detailButton);
+    actionButtons.appendChild(editButton);
+    if (isAdmin()) {
+        actionButtons.appendChild(deleteButton);
+    }
+
+    archiveItem.appendChild(numberElement);
+    archiveItem.appendChild(content);
+    archiveItem.appendChild(actionButtons);
+    return archiveItem;
+}
+
+// 修改编辑对话框函数
+function showEditDialog(archive) {
+    // 移除已存在的编辑对话框
+    const existingDialog = document.querySelector('.edit-dialog');
+    if (existingDialog) {
+        existingDialog.remove();
+    }
+
+    // 创建新的编辑对话框
+    const dialog = document.createElement('div');
+    dialog.className = 'edit-dialog';
+    
+    // 设置对话框内容
+    dialog.innerHTML = `
+        <div class="edit-content">
+            <h3>修改档案</h3>
+            <div class="form-group">
+                <label>标签：</label>
+                <div class="tags-container">
+                    <div class="tags-pool" id="editTagsPool"></div>
+                    <div class="selected-tags" id="editSelectedTags"></div>
+                    <div class="tag-input-container">
+                        <input type="text" id="editNewTag" placeholder="输入新标签">
+                        <button type="button" onclick="addCustomTag('edit')">添加</button>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="editCustomData">自定义数据：</label>
+                <textarea id="editCustomData" rows="10">${archive.rawCustomData || ''}</textarea>
+            </div>
+            <div class="button-group">
+                <button onclick="saveEdit('${archive._id}')" class="btn">保存</button>
+                <button onclick="closeEditDialog()" class="btn">取消</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(dialog);
+    
+    // 初始化标签
+    selectedTags.edit = new Set(archive.tags || []);
+    loadTags('edit');
+    
+    // 防止页面滚动
+    document.body.style.overflow = 'hidden';
+}
+
+// 修改保存编辑函数
+async function saveEdit(id) {
+    try {
+        const rawCustomData = document.getElementById('editCustomData').value;
+        const tags = Array.from(selectedTags.edit);
+        
+        const response = await fetchWithAuth(`/archives/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ rawCustomData, tags })
+        });
+
+        if (response.ok) {
+            alert('修改成功');
+            closeEditDialog();
+            // 刷新档案列表
+            if (document.getElementById('listPage').style.display !== 'none') {
+                loadArchives(1);
+            } else {
+                searchArchives(1);
+            }
+        } else {
+            const error = await response.json();
+            throw new Error(error.message);
+        }
+    } catch (error) {
+        alert('保存失败：' + error.message);
+    }
+}
+
+// 标签管理页面功能
+async function loadTagsList() {
+    try {
+        const response = await fetchWithAuth('/tags');
+        if (!response.ok) {
+            throw new Error('获取标签失败');
+        }
+        
+        const tags = await response.json();
+        const tagsList = document.getElementById('tagsList');
+        tagsList.innerHTML = '';
+        
+        tags.forEach(tag => {
+            const tagItem = document.createElement('div');
+            tagItem.className = 'tag-item';
+            tagItem.innerHTML = `
+                <div class="tag-info">
+                    <span class="tag-name">${tag.name}</span>
+                    <span class="tag-count">使用次数：${tag.usageCount}</span>
+                </div>
+                <span class="delete-tag" onclick="deleteTag('${tag._id}')">
+                    <i class="fas fa-trash-alt"></i>
+                </span>
+            `;
+            tagsList.appendChild(tagItem);
+        });
+    } catch (error) {
+        console.error('加载标签列表失败:', error);
+        alert('加载标签列表失败，请重试');
+    }
+}
+
+// 添加新标签（管理员功能）
+async function addTag() {
+    const input = document.getElementById('settingsNewTag');
+    const tagName = input.value.trim();
+    
+    if (!tagName) {
+        alert('请输入标签名称');
+        return;
+    }
+    
+    try {
+        const response = await fetchWithAuth('/tags', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name: tagName })
+        });
+        
+        if (response.ok) {
+            input.value = '';
+            loadTagsList();
+            loadTags();
+        } else {
+            const error = await response.json();
+            throw new Error(error.message);
+        }
+    } catch (error) {
+        alert('添加标签失败：' + error.message);
+    }
+}
+
+// 删除标签（管理员功能）
+async function deleteTag(tagId) {
+    if (!confirm('确定要删除这个标签吗？')) {
+        return;
+    }
+    
+    try {
+        const response = await fetchWithAuth(`/tags/${tagId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            loadTagsList();
+            loadTags();
+        } else {
+            const error = await response.json();
+            throw new Error(error.message);
+        }
+    } catch (error) {
+        alert('删除标签失败：' + error.message);
+    }
+}
+
+// 修改页面切换函数
+function showPage(pageId) {
+    // ... 现有代码 ...
+    
+    // 如果是设置页面，加载标签列表
+    if (pageId === 'settings') {
+        loadTagsList();
+    }
+    
+    // 如果是录入页面或搜索页面，加载标签池
+    if (pageId === 'input' || pageId === 'search') {
+        loadTags(pageId);
+    }
+}
+
+// 修改档案详情显示函数
+function showArchiveDetail(archive) {
+    const popup = document.createElement('div');
+    popup.className = 'archive-detail-popup';
+    
+    // 构建标签HTML
+    const tagsHtml = archive.tags && archive.tags.length > 0
+        ? `<div class="detail-section">
+            <h4>标签</h4>
+            <div class="archive-tags">
+                ${archive.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+            </div>
+           </div>`
+        : '';
+    
+    popup.innerHTML = `
+        <div class="archive-detail-card">
+            <div class="archive-detail-header">
+                <h3>档案详情</h3>
+                <button class="archive-detail-close" onclick="closeArchiveDetail()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="archive-detail-content">
+                ${tagsHtml}
+                <div class="detail-section">
+                    <h4>基础信息</h4>
+                    <p><strong>来源：</strong>${archive.source}</p>
+                    <p><strong>要素：</strong>${archive.element}</p>
+                </div>
+                
+                <div class="detail-section">
+                    <h4>录入信息</h4>
+                    <p><strong>录入时间：</strong>${new Date(archive.createdAt).toLocaleString()}</p>
+                    <p><strong>录入账号：</strong>${archive.createdBy}</p>
+                    <p><strong>录入IP：</strong>${archive.clientIP}</p>
+                </div>
+                
+                ${archive.customData && Object.keys(archive.customData).length > 0 ? `
+                    <div class="detail-section">
+                        <h4>自定义数据</h4>
+                        ${Object.entries(archive.customData)
+                            .map(([key, value]) => `<p><strong>${key}：</strong>${value}</p>`)
+                            .join('')}
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(popup);
+    
+    // 添加点击外部关闭功能
+    popup.addEventListener('click', (e) => {
+        if (e.target === popup) {
+            closeArchiveDetail();
+        }
+    });
+
+    // 显示弹出层
+    requestAnimationFrame(() => {
+        popup.classList.add('active');
+    });
+}</parameter>
+<parameter name="blocking">true</parameter>
+</invoke> 

@@ -22,6 +22,7 @@
                 <li><a href="#" onclick="checkAuthAndShowPage('input')" data-page="input">录入</a></li>
                 <li><a href="#" onclick="checkAuthAndShowPage('list')" data-page="list">档案</a></li>
                 <li><a href="#" onclick="checkAuthAndShowPage('search')" data-page="search">搜索</a></li>
+                <li class="admin-only"><a href="#" onclick="checkAuthAndShowPage('settings')" data-page="settings">设置</a></li>
             </ul>
             <div class="user-info">
                 <span id="username" class="user-name"></span>
@@ -50,27 +51,39 @@
         </div>
 
         <!-- 档案录入页 -->
-        <div id="inputPage" class="page" style="display: none;">
-            <h2>档案录入</h2>
-            <form id="archiveForm">
+        <div id="inputPage" class="page">
+            <h2>录入档案</h2>
+            <form id="archiveForm" class="input-form">
                 <div class="form-group">
                     <label for="source">来源：</label>
-                    <input type="text" id="source" required>
+                    <input type="text" id="source" name="source" required>
                 </div>
                 <div class="form-group">
                     <label for="element">要素：</label>
-                    <input type="text" id="element" required>
+                    <input type="text" id="element" name="element" required>
                 </div>
                 <div class="form-group">
-                    <label for="customDataText">自定义数据：</label>
-                    <textarea id="customDataText" rows="10" placeholder="请输入键值对格式的数据，每行一个，使用冒号分隔，例如：
-姓名: 张三
-性别: 男
-身份证号: 440123199001011234
-户籍地址: 广东省广州市天河区
-（中英文冒号都以）"></textarea>
+                    <label for="rawCustomData">自定义数据：</label>
+                    <textarea id="rawCustomData" name="rawCustomData" rows="10" 
+                        placeholder="请输入键值对格式的数据，每行一个，使用冒号分隔，例如：&#10;位置: 北京&#10;时间: 2023年"></textarea>
                 </div>
-                <button type="submit">提交档案</button>
+                <div class="form-group">
+                    <label>标签：</label>
+                    <div class="selected-tags" id="selectedTags"></div>
+                    <input type="hidden" id="selectedTagsInput" value="[]">
+                    <div class="tag-input-container">
+                        <input type="text" id="newTag" placeholder="输入新标签">
+                        <button type="button" onclick="addCustomTag('input')" class="primary-button">添加标签</button>
+                    </div>
+                    <div class="tag-pool" id="tagPool">
+                        <div class="tag-pool-header">
+                            <span class="tag-pool-title">可选标签</span>
+                            <span class="tag-pool-toggle" onclick="toggleTagPool(this)">显示全部</span>
+                        </div>
+                        <div class="tag-pool-grid"></div>
+                    </div>
+                </div>
+                <button type="submit" class="primary-button">提交档案</button>
             </form>
         </div>
 
@@ -83,13 +96,55 @@
 
         <!-- 档案查询页 -->
         <div id="searchPage" class="page" style="display: none;">
-            <h2>档案查询</h2>
-            <div class="search-box">
-                <input type="text" id="searchKeyword" placeholder="输入关键词进行搜索">
-                <button onclick="searchArchives()">搜索</button>
+            <h2>搜索档案</h2>
+            <div class="search-container">
+                <form id="searchForm" onsubmit="searchArchives(1); return false;">
+                    <input type="text" id="searchInput" placeholder="输入关键词搜索...">
+                    <button type="submit" class="primary-button">搜索</button>
+                </form>
             </div>
+            
+            <div class="tag-pool" id="searchTagPool">
+                <div class="tag-pool-header">
+                    <span class="tag-pool-title">按标签筛选</span>
+                    <span class="tag-pool-toggle" onclick="toggleTagPool(this)">显示全部</span>
+                </div>
+                <div class="tag-pool-grid"></div>
+                <div class="selected-tags" id="searchSelectedTags"></div>
+                <input type="hidden" id="searchSelectedTagsInput" name="searchTags">
+            </div>
+
             <div id="searchResults"></div>
-            <div class="pagination" id="searchPagination"></div>
+            <div id="searchPagination" class="pagination"></div>
+        </div>
+
+        <!-- 设置页面（仅管理员可见） -->
+        <div id="settingsPage" class="page admin-only" style="display: none;">
+            <h2>标签管理</h2>
+            <div class="settings-container">
+                <!-- 标签池显示 -->
+                <div class="tag-pool" id="settingsTagPool">
+                    <div class="tag-pool-header">
+                        <span class="tag-pool-title">现有标签</span>
+                        <span class="tag-pool-toggle" onclick="toggleTagPool(this)">显示全部</span>
+                    </div>
+                    <div class="tag-pool-grid"></div>
+                </div>
+
+                <!-- 添加新标签 -->
+                <div class="form-group">
+                    <label>添加新标签：</label>
+                    <div class="tag-input-container">
+                        <input type="text" id="settingsNewTag" placeholder="输入标签名称">
+                        <button onclick="addTag()" class="primary-button">添加</button>
+                    </div>
+                </div>
+
+                <!-- 标签列表 -->
+                <div class="tags-list" id="tagsList">
+                    <!-- 标签列表将通过JavaScript动态加载 -->
+                </div>
+            </div>
         </div>
 
         <!-- 登录页面 -->

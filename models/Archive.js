@@ -32,6 +32,11 @@ const archiveSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    // 标签
+    tags: [{
+        type: String,
+        ref: 'Tag'
+    }],
     // 录入信息
     createdBy: {          // 录入账号
         type: String,

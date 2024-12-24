@@ -114,27 +114,40 @@ function createArchiveElement(archive, number) {
         </p>
     `;
 
-    // 自定义数据（只显示前3行）
-    if (archive.customData && Object.keys(archive.customData).length > 0) {
-        const entries = Object.entries(archive.customData);
-        const displayEntries = entries.slice(0, 3);
-        const remainingCount = entries.length - 3;
-
-        const customDataHtml = displayEntries
-            .map(([key, value]) => `
-                <p>
-                    <strong>${key}：</strong>
-                    <span>${value}</span>
-                </p>
-            `)
-            .join('');
-            
-        content.innerHTML += `
-            <div class="custom-data">
-                ${customDataHtml}
-                ${remainingCount > 0 ? `<p class="more-data">还有 ${remainingCount} 项...</p>` : ''}
-            </div>`;
+    // 标签
+    if (archive.tags && archive.tags.length > 0) {
+        const tagsHtml = `
+            <div class="archive-tags-section">
+                <p class="tags-label"><strong>标签：</strong></p>
+                <div class="archive-tags">
+                    ${archive.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                </div>
+            </div>
+        `;
+        content.innerHTML += tagsHtml;
     }
+
+    // 自定义数据
+    if (archive.rawCustomData) {
+        const lines = archive.rawCustomData.split('\n');
+        const displayLines = lines.slice(0, 3);
+        const remainingCount = lines.length - 3;
+
+        const customDataHtml = `
+            <div class="custom-data">
+                <pre>${displayLines.join('\n')}</pre>
+                ${remainingCount > 0 ? `<p class="more-data">还有 ${remainingCount} 行...</p>` : ''}
+            </div>`;
+        content.innerHTML += customDataHtml;
+    }
+
+    // 创建信息
+    content.innerHTML += `
+        <div class="creation-info">
+            <p><strong>录入账号：</strong>${archive.createdBy || ''}</p>
+            <p><strong>录入时间：</strong>${archive.createdAt ? new Date(archive.createdAt).toLocaleString() : ''}</p>
+        </div>
+    `;
 
     // 操作按钮
     const actionButtons = document.createElement('div');
@@ -144,30 +157,30 @@ function createArchiveElement(archive, number) {
     const detailButton = document.createElement('button');
     detailButton.className = 'detail-btn';
     detailButton.innerHTML = '<i class="fas fa-info-circle"></i> 详情';
-    detailButton.onclick = () => showArchiveDetail(archive);
+    detailButton.onclick = () => showArchiveDetail(archive._id);
 
     // 编辑按钮
     const editButton = document.createElement('button');
     editButton.className = 'edit-btn';
     editButton.innerHTML = '<i class="fas fa-edit"></i> 修改';
-    editButton.onclick = () => showEditDialog(archive);
+    editButton.onclick = () => showEditDialog(archive._id);
 
     // 删除按钮（仅管理员可见）
-    const deleteButton = document.createElement('button');
-    deleteButton.className = 'delete-btn';
-    deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i> 删除';
-    deleteButton.onclick = () => deleteArchive(archive._id);
+    if (userRole === 'admin') {
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'delete-btn';
+        deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i> 删除';
+        deleteButton.onclick = () => deleteArchive(archive._id);
+        actionButtons.appendChild(deleteButton);
+    }
 
     actionButtons.appendChild(detailButton);
     actionButtons.appendChild(editButton);
-    // 只有管理员才能看到删除按钮
-    if (isAdmin()) {
-        actionButtons.appendChild(deleteButton);
-    }
 
     archiveItem.appendChild(numberElement);
     archiveItem.appendChild(content);
     archiveItem.appendChild(actionButtons);
+
     return archiveItem;
 }
 
@@ -244,7 +257,7 @@ function updatePagination(paginationElement, { currentPage, totalPages, onPageCh
         return button;
     };
 
-    // 添加上一页按钮
+    // 添加一页按钮
     if (currentPage > 1) {
         paginationElement.appendChild(createPageButton(currentPage - 1, '上一页'));
     }
@@ -276,165 +289,393 @@ function updatePagination(paginationElement, { currentPage, totalPages, onPageCh
 
 // 搜索档案
 async function searchArchives(page = 1) {
-    const keyword = document.getElementById('searchKeyword').value.trim();
-    if (!keyword) {
-        alert('请输入搜索关键词');
-        return;
-    }
-
     try {
-        const response = await fetchWithAuth(`/archives/search?keyword=${encodeURIComponent(keyword)}&page=${page}`);
+        const keyword = document.getElementById('searchInput').value.trim();
+        const selectedTagsContainer = document.getElementById('searchSelectedTags');
+        const selectedTags = Array.from(selectedTagsContainer.children)
+            .map(tag => tag.textContent.trim())
+            .filter(tag => tag); // 过滤掉空标签
+        
+        const queryParams = new URLSearchParams({
+            page: page,
+            limit: 10
+        });
+
+        if (keyword) {
+            queryParams.append('keyword', keyword);
+        }
+
+        if (selectedTags.length > 0) {
+            queryParams.append('tags', selectedTags.join(','));
+        }
+
+        const response = await fetchWithAuth(`/archives/search?${queryParams}`);
         if (!response.ok) {
-            throw new Error('搜索失败');
+            const error = await response.json();
+            throw new Error(error.message || '搜索失败');
         }
 
         const data = await response.json();
-        const searchResults = document.getElementById('searchResults');
-        const pagination = document.getElementById('searchPagination');
-
-        // 清空现有内容
-        searchResults.innerHTML = '';
+        
+        // 检查返回的数据结构
+        if (!data || !Array.isArray(data.archives)) {
+            throw new Error('返回的数据格式不正确');
+        }
+        
+        const pagination = {
+            current: parseInt(page),
+            pageSize: 10,
+            total: Math.ceil((data.total || 0) / 10)
+        };
 
         // 显示搜索结果
-        if (data.archives && data.archives.length > 0) {
-            data.archives.forEach((archive, index) => {
-                const archiveElement = createArchiveElement(archive, (page - 1) * 10 + index + 1);
-                searchResults.appendChild(archiveElement);
-            });
+        const searchResults = document.getElementById('searchResults');
+        if (data.archives.length === 0) {
+            searchResults.innerHTML = '<div class="no-data">未找到匹配的档案</div>';
         } else {
-            searchResults.innerHTML = '<p class="no-data">未找到匹配的档案</p>';
+            displayArchives(data.archives, pagination, 'searchResults', 'searchPagination');
         }
-
-        // 更新分页
-        updatePagination(pagination, {
-            currentPage: data.currentPage,
-            totalPages: data.totalPages,
-            onPageChange: (newPage) => searchArchives(newPage)
-        });
     } catch (error) {
         console.error('搜索失败:', error);
-        alert('搜索失败，请重试');
+        alert('搜索失败：' + error.message);
     }
 }
 
 // 显示档案列表
 function displayArchives(archives, pagination, containerId, paginationId) {
-    console.log('Displaying archives:', { archives, pagination, containerId, paginationId });
-
     const container = document.getElementById(containerId);
-    if (!container) {
-        console.error(`Container not found: ${containerId}`);
-        return;
-    }
+    if (!container) return;
+    
     container.innerHTML = '';
-
-    if (!Array.isArray(archives) || archives.length === 0) {
-        container.innerHTML = '<div class="no-data">没有找到相关档案</div>';
-        document.getElementById(paginationId).innerHTML = '';
+    
+    if (!archives || archives.length === 0) {
+        container.innerHTML = '<div class="no-data">无数据</div>';
         return;
     }
-
-    // 计算起始序号
-    const startNumber = (pagination.current - 1) * 10 + 1;
-
+    
+    console.log('正在显示档案列表，数据:', {
+        archivesCount: archives.length,
+        sampleArchive: archives[0] ? {
+            id: archives[0]._id,
+            source: archives[0].source,
+            tags: archives[0].tags,
+            rawCustomData: archives[0].rawCustomData
+        } : null
+    });
+    
     archives.forEach((archive, index) => {
+        const number = pagination ? (pagination.current - 1) * pagination.pageSize + index + 1 : index + 1;
+        
+        // 创建档案元素
         const archiveElement = document.createElement('div');
         archiveElement.className = 'archive-item';
         
-        // 构建基础数据 HTML
-        let baseHtml = `
-            <p><strong>来源：</strong>${archive.source || ''}</p>
-            <p><strong>要素：</strong>${archive.element || ''}</p>
-        `;
-
-        // 构建自定义数据 HTML
-        let customDataHtml = '';
-        if (archive.customData) {
-            for (const [dataType, value] of Object.entries(archive.customData)) {
-                customDataHtml += `<p><strong>${dataType}：</strong>${value || ''}</p>`;
-            }
-        }
-
-        // 根据用户权限和档案创建者显示操作按钮
-        const isAdmin = userRole === 'admin';
-        const isCreator = archive.createdBy === localStorage.getItem('username');
-        const canEdit = isAdmin || isCreator;
-        const canDelete = isAdmin;
-
-        // 添加操作按钮
-        const actionButtons = `
-            <div class="action-buttons">
-                ${canEdit ? `<button onclick="editArchive('${archive._id}')" class="edit-btn">修改</button>` : ''}
-                ${canDelete ? `<button onclick="deleteArchive('${archive._id}')" class="delete-btn">删除</button>` : ''}
-            </div>
-        `;
-
-        // 构建录入信息 HTML
-        const creationInfo = `
-            <div class="creation-info">
-                <p><strong>录入账号：</strong>${archive.createdBy || ''}</p>
-                <p><strong>录入时间：</strong>${archive.createdAt ? new Date(archive.createdAt).toLocaleString() : ''}</p>
-                <p><strong>客户端IP：</strong>${archive.clientIP || ''}</p>
-            </div>
-        `;
-
-        // 使用新的布局结构
+        // 构建标签HTML
+        const tagsHtml = archive.tags && archive.tags.length > 0 
+            ? `<div class="archive-tags-section">
+                <p class="tags-label"><strong>标签：</strong></p>
+                <div class="archive-tags">
+                    ${archive.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                </div>
+               </div>` 
+            : '';
+            
+        // 构建自定义数据HTML
+        const customDataHtml = archive.rawCustomData 
+            ? `<div class="custom-data">
+                <h4>自定义数据：</h4>
+                <pre>${archive.rawCustomData}</pre>
+               </div>`
+            : '';
+        
         archiveElement.innerHTML = `
-            <div class="archive-number">${startNumber + index}</div>
+            <div class="archive-number">${String(number).padStart(2, '0')}</div>
             <div class="archive-content">
-                ${baseHtml}
+                <div class="basic-info">
+                    <p><strong>来源：</strong><span>${archive.source || ''}</span></p>
+                    <p><strong>要素：</strong><span>${archive.element || ''}</span></p>
+                </div>
+                ${tagsHtml}
                 ${customDataHtml}
-                ${creationInfo}
+                <div class="creation-info">
+                    <p><strong>录入账号：</strong>${archive.createdBy || ''}</p>
+                    <p><strong>录入时间：</strong>${archive.createdAt ? new Date(archive.createdAt).toLocaleString() : ''}</p>
+                </div>
             </div>
-            ${actionButtons}
+            <div class="action-buttons">
+                <button onclick="showArchiveDetail('${archive._id}')" class="detail-btn">
+                    <i class="fas fa-info-circle"></i> 详情
+                </button>
+                <button onclick="showEditDialog('${archive._id}')" class="edit-btn">
+                    <i class="fas fa-edit"></i> 修改
+                </button>
+                ${userRole === 'admin' ? `
+                    <button onclick="deleteArchive('${archive._id}')" class="delete-btn">
+                        <i class="fas fa-trash-alt"></i> 删除
+                    </button>
+                ` : ''}
+            </div>
         `;
+        
         container.appendChild(archiveElement);
     });
 
-    // 显示分页
+    // 更新分页
     const paginationContainer = document.getElementById(paginationId);
-    paginationContainer.innerHTML = '';
-    
-    if (pagination && pagination.total > 1) {
-        for (let i = 1; i <= pagination.total; i++) {
-            const button = document.createElement('button');
-            button.textContent = i;
-            button.onclick = () => containerId === 'archivesList' ? 
-                loadArchivesList(i) : searchArchives(i);
-            if (i === pagination.current) button.classList.add('active');
-            paginationContainer.appendChild(button);
-        }
+    if (paginationContainer && pagination) {
+        updatePagination(paginationContainer, {
+            currentPage: pagination.current,
+            totalPages: pagination.total,
+            onPageChange: (page) => {
+                if (containerId === 'archivesList') {
+                    loadArchivesList(page);
+                } else {
+                    searchArchives(page);
+                }
+            }
+        });
     }
 }
 
-// 页面加载时显示首页
-window.onload = () => {
-    console.log('页面加载，检查录状态...');
-    token = localStorage.getItem('token');
-    userRole = localStorage.getItem('userRole');
-    
+// 页面加载完成后执行
+document.addEventListener('DOMContentLoaded', () => {
+    // 检查登录状态
+    const token = localStorage.getItem('token');
     if (token) {
-        // 检查登录时间
-        const loginTime = new Date(localStorage.getItem('loginTime'));
-        const now = new Date();
-        const daysPassed = (now - loginTime) / (1000 * 60 * 60 * 24);
-        
-        if (daysPassed > 7) {
-            console.log('登录已过期');
-            logout();
-            return;
+        userRole = localStorage.getItem('role');
+        // 初始化页面
+        showPage('list');
+        // 加载标签池
+        loadTags('input');
+        loadTags('search');
+        // 如果是管理员，加载标签列表
+        if (userRole === 'admin') {
+            loadTagsList();
         }
-        
-        console.log('登录状态有效');
-        updateUI();
-        showPage('home');
     } else {
-        console.log('未登录');
         showPage('login');
     }
-};
 
-// 添加汉堡菜单控制函数
+    // 绑定表单提交事件
+    document.getElementById('archiveForm').addEventListener('submit', submitArchive);
+    document.getElementById('searchForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        searchArchives(1);
+    });
+});
+
+// 显示页面
+function showPage(pageId) {
+    // 隐藏所有页面
+    document.querySelectorAll('.page').forEach(page => {
+        page.style.display = 'none';
+    });
+
+    // 显示指定页面
+    const page = document.getElementById(pageId + 'Page');
+    if (page) {
+        page.style.display = 'block';
+    }
+
+    // 据页面类型执行特定操作
+    switch (pageId) {
+        case 'home':
+            // 加载首页统计信息
+            loadHomeStats();
+            break;
+        case 'input':
+            // 加载录入页面标签池
+            loadTags('input');
+            break;
+        case 'list':
+            // 加载档案列表
+            loadArchivesList(1);
+            break;
+        case 'search':
+            // 加载搜索页面标签池
+            loadTags('search');
+            break;
+        case 'settings':
+            if (userRole === 'admin') {
+                // 加载标签管理页面
+                loadTagsList();
+                // 加载设置页面标签池
+                loadTags('settings');
+            }
+            break;
+    }
+}
+
+// 搜索档案
+async function searchArchives(page = 1) {
+    try {
+        const keyword = document.getElementById('searchInput').value.trim();
+        const selectedTagsContainer = document.getElementById('searchSelectedTags');
+        const selectedTags = Array.from(selectedTagsContainer.children)
+            .map(tag => tag.textContent.trim())
+            .filter(tag => tag); // 过滤掉空标签
+        
+        const queryParams = new URLSearchParams({
+            page: page,
+            limit: 10
+        });
+
+        if (keyword) {
+            queryParams.append('keyword', keyword);
+        }
+
+        if (selectedTags.length > 0) {
+            queryParams.append('tags', selectedTags.join(','));
+        }
+
+        const response = await fetchWithAuth(`/archives/search?${queryParams}`);
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || '搜索失败');
+        }
+
+        const data = await response.json();
+        
+        // 检查返回的数据结构
+        if (!data || !Array.isArray(data.archives)) {
+            throw new Error('返回的数据格式不正确');
+        }
+        
+        const pagination = {
+            current: parseInt(page),
+            pageSize: 10,
+            total: Math.ceil((data.total || 0) / 10)
+        };
+
+        // 显示搜索结果
+        const searchResults = document.getElementById('searchResults');
+        if (data.archives.length === 0) {
+            searchResults.innerHTML = '<div class="no-data">未找到匹配的档案</div>';
+        } else {
+            displayArchives(data.archives, pagination, 'searchResults', 'searchPagination');
+        }
+    } catch (error) {
+        console.error('搜索失败:', error);
+        alert('搜索失败：' + error.message);
+    }
+}
+
+// 加载标签池
+async function loadTags(context = 'input') {
+    try {
+        const response = await fetchWithAuth('/tags');
+        if (!response.ok) {
+            throw new Error('加载标签失败');
+        }
+        const tags = await response.json();
+        
+        let tagPoolId;
+        if (context === 'input') {
+            tagPoolId = 'tagPool';
+        } else if (context === 'search') {
+            tagPoolId = 'searchTagPool';
+        } else if (context === 'edit') {
+            tagPoolId = 'editTagPool';
+        }
+        
+        const tagPool = document.getElementById(tagPoolId);
+        if (!tagPool) return;
+        
+        const tagPoolGrid = tagPool.querySelector('.tag-pool-grid') || tagPool;
+        // 默认显示所有标签
+        tagPoolGrid.innerHTML = tags.map(tag => `
+            <span class="tag" onclick="selectTag('${tag.name}', '${context}')">
+                ${tag.name}
+            </span>
+        `).join('');
+        
+        // 如果是设置页面，默认展开
+        if (context === 'settings') {
+            tagPool.classList.add('expanded');
+            const toggleButton = tagPool.querySelector('.tag-pool-toggle');
+            if (toggleButton) {
+                toggleButton.textContent = '收起';
+            }
+        }
+    } catch (error) {
+        console.error('加载标签失败:', error);
+        alert('加载标签失败：' + error.message);
+    }
+}
+
+// 选择标签
+function selectTag(tagName, context) {
+    let selectedTagsContainer;
+    let selectedTagsInput;
+    
+    if (context === 'input') {
+        selectedTagsContainer = document.getElementById('selectedTags');
+        selectedTagsInput = document.getElementById('selectedTagsInput');
+    } else if (context === 'search') {
+        selectedTagsContainer = document.getElementById('searchSelectedTags');
+        selectedTagsInput = document.getElementById('searchSelectedTagsInput');
+    } else if (context === 'edit') {
+        selectedTagsContainer = document.getElementById('editSelectedTags');
+        selectedTagsInput = document.getElementById('editSelectedTagsInput');
+    }
+    
+    if (!selectedTagsContainer || !selectedTagsInput) return;
+    
+    // 检查标签是否已存在
+    const existingTag = Array.from(selectedTagsContainer.children)
+        .find(tag => tag.textContent.trim() === tagName);
+    
+    if (existingTag) return;
+    
+    // 创建新标签元素
+    const tagElement = document.createElement('span');
+    tagElement.className = 'tag selected';
+    tagElement.textContent = tagName;
+    tagElement.onclick = () => {
+        tagElement.remove();
+        updateSelectedTags(context);
+        if (context === 'search') {
+            searchArchives(1);
+        }
+    };
+    
+    // 添加标签到容器
+    selectedTagsContainer.appendChild(tagElement);
+    updateSelectedTags(context);
+    
+    // 如果是搜索上下文，立即触发搜索
+    if (context === 'search') {
+        searchArchives(1);
+    }
+}
+
+// 更新已选标签
+function updateSelectedTags(context) {
+    let selectedTagsContainer;
+    let selectedTagsInput;
+    
+    if (context === 'input') {
+        selectedTagsContainer = document.getElementById('selectedTags');
+        selectedTagsInput = document.getElementById('selectedTagsInput');
+    } else if (context === 'search') {
+        selectedTagsContainer = document.getElementById('searchSelectedTags');
+        selectedTagsInput = document.getElementById('searchSelectedTagsInput');
+    } else if (context === 'edit') {
+        selectedTagsContainer = document.getElementById('editSelectedTags');
+        selectedTagsInput = document.getElementById('editSelectedTagsInput');
+    }
+    
+    if (!selectedTagsContainer || !selectedTagsInput) return;
+    
+    // 获取所有已选标签
+    const selectedTags = Array.from(selectedTagsContainer.children)
+        .map(tag => tag.textContent.trim());
+    
+    // 更新隐藏输入字段的值
+    selectedTagsInput.value = JSON.stringify(selectedTags);
+}
+
+// 添加汉堡菜单控制函���
 function toggleMenu() {
     const menuToggle = document.querySelector('.menu-toggle');
     const navMenu = document.querySelector('.nav-menu');
@@ -570,7 +811,7 @@ function closeEditDialog() {
 
 // 删除档案
 async function deleteArchive(id) {
-    if (!confirm('确定要删除��条档案吗？')) {
+    if (!confirm('确定要删除这条档案吗？')) {
         return;
     }
 
@@ -649,7 +890,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
             updateUI();
             showPage('home');
         } else {
-            // 登录失败，添加错误效果
+            // 录失败，添加错误效果
             usernameInput.classList.add('error');
             passwordInput.classList.add('error');
             throw new Error(data.message || '登录失败');
@@ -684,7 +925,7 @@ function updateUI() {
     const username = localStorage.getItem('username');
     const userInfo = document.getElementById('username');
     if (username && userInfo) {
-        userInfo.textContent = `${username} (${isAdmin ? '管理员' : '普通用户'})`;
+        userInfo.textContent = `${username} (${isAdmin ? '管理员' : '普通���户'})`;
     }
 }
 
@@ -724,79 +965,65 @@ function showArchiveList() {
 }
 
 // 显示最新录入的档案详情
-async function showLatestArchive() {
+async function showLatestArchive(archive) {
     try {
-        const response = await fetchWithAuth('/archives/latest');
-        if (!response.ok) {
-            throw new Error('获取最新档案失败');
+        if (!archive) {
+            const response = await fetchWithAuth('/archives?page=1&limit=1');
+            if (!response.ok) {
+                throw new Error('获取最新档案失败');
+            }
+            const data = await response.json();
+            if (!data.archives || data.archives.length === 0) {
+                return;
+            }
+            archive = data.archives[0];
         }
 
-        const archive = await response.json();
-        if (archive) {
-            // 创建弹出层
-            const popup = document.createElement('div');
-            popup.className = 'latest-archive-popup';
+        const popup = document.createElement('div');
+        popup.className = 'latest-archive-popup';
+        
+        const tagsHtml = archive.tags && archive.tags.length > 0 
+            ? `<div class="archive-tags">
+                ${archive.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+               </div>` 
+            : '';
             
-            // 创建卡片内容
-            popup.innerHTML = `
-                <div class="latest-archive-card">
-                    <div class="latest-archive-header">
-                        <h3>最新录入档案</h3>
-                        <button class="latest-archive-close" onclick="closeLatestArchive()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="latest-archive-content">
-                        <div class="latest-archive-item">
-                            <div class="latest-archive-label">来源</div>
-                            <div class="latest-archive-value">${archive.source}</div>
-                        </div>
-                        <div class="latest-archive-item">
-                            <div class="latest-archive-label">要素</div>
-                            <div class="latest-archive-value">${archive.element}</div>
-                        </div>
-                        <div class="latest-archive-item">
-                            <div class="latest-archive-label">录入时间</div>
-                            <div class="latest-archive-value">${new Date(archive.createdAt).toLocaleString()}</div>
-                        </div>
-                        <div class="latest-archive-item">
-                            <div class="latest-archive-label">录入账号</div>
-                            <div class="latest-archive-value">${archive.createdBy}</div>
-                        </div>
-                        <div class="latest-archive-item">
-                            <div class="latest-archive-label">录入IP</div>
-                            <div class="latest-archive-value">${archive.clientIP}</div>
-                        </div>
-                        ${archive.customData && Object.keys(archive.customData).length > 0 ? `
-                            <div class="latest-archive-item">
-                                <div class="latest-archive-label">自定义数据</div>
-                                ${Object.entries(archive.customData).map(([key, value]) => `
-                                    <div class="latest-archive-value">${key}: ${value}</div>
-                                `).join('')}
-                            </div>
-                        ` : ''}
+        const customDataHtml = archive.rawCustomData 
+            ? `<div class="custom-data">
+                <h4>自定义数据：</h4>
+                <pre>${archive.rawCustomData}</pre>
+               </div>`
+            : '';
+
+        popup.innerHTML = `
+            <div class="latest-archive-card">
+                <div class="latest-archive-header">
+                    <h3>最新录入档案</h3>
+                    <button class="latest-archive-close" onclick="closeLatestArchive()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="latest-archive-content">
+                    <p><strong>来源：</strong>${archive.source || ''}</p>
+                    <p><strong>要素：</strong>${archive.element || ''}</p>
+                    ${tagsHtml}
+                    ${customDataHtml}
+                    <div class="creation-info">
+                        <p><strong>录入账号：</strong>${archive.createdBy || ''}</p>
+                        <p><strong>录入时间：</strong>${archive.createdAt ? new Date(archive.createdAt).toLocaleString() : ''}</p>
                     </div>
                 </div>
-            `;
+            </div>
+        `;
 
-            // 添加到页面
-            document.body.appendChild(popup);
-            
-            // 添加点击外部关闭功能
-            popup.addEventListener('click', (e) => {
-                if (e.target === popup) {
-                    closeLatestArchive();
-                }
-            });
-
-            // 显示弹出层
-            requestAnimationFrame(() => {
-                popup.classList.add('active');
-            });
-        }
+        document.body.appendChild(popup);
+        
+        requestAnimationFrame(() => {
+            popup.classList.add('active');
+        });
     } catch (error) {
-        console.error('获取最新档案失败:', error);
-        alert('获取最新档案失败，请重试');
+        console.error('显示最新档案失败:', error);
+        alert('显示最新档案失败，请重试');
     }
 }
 
@@ -807,31 +1034,66 @@ function closeLatestArchive() {
         popup.classList.remove('active');
         setTimeout(() => {
             popup.remove();
-        }, 300); // 等待动画完成
+        }, 300); // 等待画完成
     }
 }
 
 // 显示编辑对话框
-function showEditDialog(archive) {
-    // 创建对话框
-    const dialog = document.createElement('div');
-    dialog.className = 'edit-dialog';
-    
-    dialog.innerHTML = `
-        <div class="edit-content">
-            <h3>修改档案</h3>
-            <div class="form-group">
-                <label>自定义数据：</label>
-                <textarea id="editCustomData" rows="10" placeholder="请输入键值对格式的数据，每行一个，使用冒号分隔">${archive.rawCustomData || ''}</textarea>
+async function showEditDialog(archiveId) {
+    try {
+        const response = await fetchWithAuth(`/archives/${archiveId}`);
+        if (!response.ok) {
+            throw new Error('获取档案失败');
+        }
+        const archive = await response.json();
+        
+        const dialog = document.createElement('div');
+        dialog.className = 'edit-dialog';
+        
+        dialog.innerHTML = `
+            <div class="edit-content">
+                <h3>修改档案</h3>
+                <div class="form-group">
+                    <label>来源：</label>
+                    <input type="text" value="${archive.source || ''}" readonly>
+                </div>
+                <div class="form-group">
+                    <label>要素：</label>
+                    <input type="text" value="${archive.element || ''}" readonly>
+                </div>
+                <div class="form-group">
+                    <label>标签：</label>
+                    <div class="selected-tags" id="editSelectedTags">
+                        ${archive.tags ? archive.tags.map(tag => 
+                            `<span class="tag selected" onclick="this.remove(); updateSelectedTags('edit');">
+                                ${tag}
+                            </span>`
+                        ).join('') : ''}
+                    </div>
+                    <input type="hidden" id="editSelectedTagsInput" value="${JSON.stringify(archive.tags || [])}">
+                </div>
+                <div class="form-group">
+                    <label>自定义数据：</label>
+                    <textarea id="editRawCustomData" rows="10" placeholder="请输入键值对格式的数据，每行一个，使用冒号分隔">${archive.rawCustomData || ''}</textarea>
+                </div>
+                <div class="button-group">
+                    <button onclick="updateArchive('${archive._id}')" class="primary-button">保存</button>
+                    <button onclick="closeEditDialog()" class="secondary-button">取消</button>
+                </div>
             </div>
-            <div class="button-group">
-                <button onclick="updateArchive('${archive._id}')">保存</button>
-                <button onclick="closeEditDialog()">取消</button>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(dialog);
+        `;
+        
+        document.body.appendChild(dialog);
+        
+        dialog.addEventListener('click', (e) => {
+            if (e.target === dialog) {
+                closeEditDialog();
+            }
+        });
+    } catch (error) {
+        console.error('显示编辑对话框失败:', error);
+        alert('显示编辑对话框失败：' + error.message);
+    }
 }
 
 // 关闭编辑对话框
@@ -845,14 +1107,25 @@ function closeEditDialog() {
 // 更新档案
 async function updateArchive(id) {
     try {
-        const rawCustomData = document.getElementById('editCustomData').value;
+        const rawCustomData = document.getElementById('editRawCustomData').value;
+        const selectedTagsInput = document.getElementById('editSelectedTagsInput');
+        const tags = JSON.parse(selectedTagsInput.value || '[]');
+        
+        console.log('准备更新档案:', {
+            id,
+            rawCustomData,
+            tags
+        });
         
         const response = await fetchWithAuth(`/archives/${id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ rawCustomData })
+            body: JSON.stringify({ 
+                rawCustomData,
+                tags
+            })
         });
 
         if (!response.ok) {
@@ -860,11 +1133,11 @@ async function updateArchive(id) {
         }
 
         closeEditDialog();
-        loadArchives(); // 重新加载列表
+        loadArchivesList(1); // 重新加载列表
         alert('更新成功');
     } catch (error) {
         console.error('更新档案失败:', error);
-        alert('更新档案失败，请重试');
+        alert('更新档案失败：' + error.message);
     }
 }
 
@@ -892,57 +1165,77 @@ async function deleteArchive(id) {
 }
 
 // 显示档案详情
-function showArchiveDetail(archive) {
-    const popup = document.createElement('div');
-    popup.className = 'archive-detail-popup';
-    
-    popup.innerHTML = `
-        <div class="archive-detail-card">
-            <div class="archive-detail-header">
-                <h3>档案详情</h3>
-                <button class="archive-detail-close" onclick="closeArchiveDetail()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="archive-detail-content">
-                <div class="detail-section">
-                    <h4>基础信息</h4>
-                    <p><strong>来源：</strong>${archive.source}</p>
-                    <p><strong>要素：</strong>${archive.element}</p>
-                </div>
-                
-                <div class="detail-section">
-                    <h4>录入信息</h4>
-                    <p><strong>录入时间：</strong>${new Date(archive.createdAt).toLocaleString()}</p>
-                    <p><strong>录入账号：</strong>${archive.createdBy}</p>
-                    <p><strong>录入IP：</strong>${archive.clientIP}</p>
-                </div>
-                
-                ${archive.customData && Object.keys(archive.customData).length > 0 ? `
-                    <div class="detail-section">
-                        <h4>自定义数据</h4>
-                        ${Object.entries(archive.customData)
-                            .map(([key, value]) => `<p><strong>${key}：</strong>${value}</p>`)
-                            .join('')}
-                    </div>
-                ` : ''}
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(popup);
-    
-    // 添加点击外部关闭功能
-    popup.addEventListener('click', (e) => {
-        if (e.target === popup) {
-            closeArchiveDetail();
+async function showArchiveDetail(archiveId) {
+    try {
+        const response = await fetchWithAuth(`/archives/${archiveId}`);
+        if (!response.ok) {
+            throw new Error('获取档案详情���败');
         }
-    });
+        const archive = await response.json();
+        
+        const popup = document.createElement('div');
+        popup.className = 'archive-detail-popup';
+        
+        const tagsHtml = archive.tags && archive.tags.length > 0 
+            ? `<div class="detail-section">
+                <h4>标签</h4>
+                <div class="archive-tags">
+                    ${archive.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                </div>
+               </div>`
+            : '';
+            
+        const customDataHtml = archive.rawCustomData 
+            ? `<div class="detail-section">
+                <h4>自定义数据</h4>
+                <pre>${archive.rawCustomData}</pre>
+               </div>`
+            : '';
+        
+        popup.innerHTML = `
+            <div class="archive-detail-card">
+                <div class="archive-detail-header">
+                    <h3>档案详情</h3>
+                    <button class="archive-detail-close" onclick="closeArchiveDetail()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="archive-detail-content">
+                    <div class="detail-section">
+                        <h4>基础信息</h4>
+                        <p><strong>来源：</strong>${archive.source || ''}</p>
+                        <p><strong>要素：</strong>${archive.element || ''}</p>
+                    </div>
+                    
+                    ${tagsHtml}
+                    
+                    <div class="detail-section">
+                        <h4>录入信息</h4>
+                        <p><strong>录入时间：</strong>${archive.createdAt ? new Date(archive.createdAt).toLocaleString() : ''}</p>
+                        <p><strong>录入账号：</strong>${archive.createdBy || ''}</p>
+                        <p><strong>客户端IP：</strong>${archive.clientIP || ''}</p>
+                    </div>
+                    
+                    ${customDataHtml}
+                </div>
+            </div>
+        `;
 
-    // 显示弹出层
-    requestAnimationFrame(() => {
-        popup.classList.add('active');
-    });
+        document.body.appendChild(popup);
+        
+        popup.addEventListener('click', (e) => {
+            if (e.target === popup) {
+                closeArchiveDetail();
+            }
+        });
+
+        requestAnimationFrame(() => {
+            popup.classList.add('active');
+        });
+    } catch (error) {
+        console.error('显示档案详情失败:', error);
+        alert('显示档案详情失败：' + error.message);
+    }
 }
 
 // 关闭档案详情
@@ -955,3 +1248,315 @@ function closeArchiveDetail() {
         }, 300);
     }
 }
+
+// 添加自定义标签
+async function addCustomTag(context) {
+    const inputId = context === 'input' ? 'newTag' : 'editNewTag';
+    const input = document.getElementById(inputId);
+    const tagName = input.value.trim();
+    
+    if (!tagName) {
+        return;
+    }
+
+    try {
+        // 先创建标签
+        const response = await fetchWithAuth('/tags', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name: tagName })
+        });
+
+        if (response.ok) {
+            // 添加到���选标签中
+            selectTag(tagName, context);
+            input.value = '';
+            // 重新加载标签池
+            loadTags(context);
+        } else {
+            const error = await response.json();
+            if (error.message === '标签已存在') {
+                // 如果标签已存在，直接添加到已选标签中
+                selectTag(tagName, context);
+                input.value = '';
+            } else {
+                throw new Error(error.message);
+            }
+        }
+    } catch (error) {
+        console.error('添加标签失败:', error);
+        alert('添加标签失败：' + error.message);
+    }
+}
+
+// 添加新标签（管理员功能）
+async function addTag() {
+    const input = document.getElementById('settingsNewTag');
+    const tagName = input.value.trim();
+    
+    if (!tagName) {
+        alert('请输入标签名称');
+        return;
+    }
+    
+    try {
+        const response = await fetchWithAuth('/tags', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name: tagName })
+        });
+        
+        if (response.ok) {
+            alert('标签添加成功');
+            input.value = '';
+            // 重新加载标签列表和标签池
+            await loadTagsList();
+            // 重新加载所有页面的标签池
+            await loadTags('input');
+            await loadTags('search');
+            await loadTags('settings');
+        } else {
+            const error = await response.json();
+            throw new Error(error.message);
+        }
+    } catch (error) {
+        alert('添加标签失败：' + error.message);
+    }
+}
+
+// 加载标签列表（管理员设置页面使用）
+async function loadTagsList() {
+    try {
+        const response = await fetchWithAuth('/tags');
+        if (!response.ok) {
+            throw new Error('加载标签失败');
+        }
+        const tags = await response.json();
+        
+        // 更新标签列表
+        const tagsList = document.getElementById('tagsList');
+        if (tagsList) {
+            tagsList.innerHTML = '';
+            
+            tags.forEach(tag => {
+                const tagItem = document.createElement('div');
+                tagItem.className = 'tag-item';
+                tagItem.innerHTML = `
+                    <div class="tag-info">
+                        <span class="tag-name">${tag.name}</span>
+                        <span class="tag-count">使用次数：${tag.usageCount || 0}</span>
+                    </div>
+                    <button onclick="deleteTag('${tag._id}')" class="delete-btn">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                `;
+                tagsList.appendChild(tagItem);
+            });
+        }
+
+        // 更新标签池，显示所有标签
+        const tagPool = document.getElementById('settingsTagPool');
+        if (tagPool) {
+            const tagPoolGrid = tagPool.querySelector('.tag-pool-grid');
+            if (tagPoolGrid) {
+                tagPoolGrid.innerHTML = tags.map(tag => `
+                    <span class="tag">${tag.name}</span>
+                `).join('');
+            }
+            // 默认展开标签池
+            tagPool.classList.add('expanded');
+            const toggleButton = tagPool.querySelector('.tag-pool-toggle');
+            if (toggleButton) {
+                toggleButton.textContent = '收起';
+            }
+        }
+    } catch (error) {
+        console.error('加载标签列表失败:', error);
+        alert('加载标签列表失败：' + error.message);
+    }
+}
+
+// 切换标签池展示
+function toggleTagPool(element) {
+    const tagPool = element.closest('.tag-pool');
+    const isExpanded = tagPool.classList.toggle('expanded');
+    element.textContent = isExpanded ? '收起' : '显示全部';
+    
+    if (isExpanded) {
+        loadAllTags(tagPool);
+    }
+}
+
+// 加载所有标签
+async function loadAllTags(tagPool) {
+    try {
+        const response = await fetchWithAuth('/tags');
+        if (!response.ok) {
+            throw new Error('加载标签失败');
+        }
+        const tags = await response.json();
+        
+        const grid = tagPool.querySelector('.tag-pool-grid');
+        grid.innerHTML = tags.map(tag => `
+            <span class="tag" onclick="selectTag('${tag.name}', '${tagPool.id === 'tagPool' ? 'input' : 'edit'}')">
+                ${tag.name}
+            </span>
+        `).join('');
+    } catch (error) {
+        console.error('加载所有标签失败:', error);
+        alert('加载所有标签失败：' + error.message);
+    }
+}
+
+// 加载档案列表
+async function loadArchivesList(page = 1) {
+    try {
+        // 获取档案列表数据
+        const response = await fetchWithAuth(`/archives?page=${page}&limit=10`);
+        if (!response.ok) {
+            throw new Error('加载档案失败');
+        }
+
+        const data = await response.json();
+        
+        // 构建分页数据
+        const pagination = {
+            current: parseInt(page),
+            pageSize: 10,
+            total: Math.ceil((data.total || 0) / 10)
+        };
+
+        // 显示档案列表
+        displayArchives(data.archives, pagination, 'archivesList', 'listPagination');
+    } catch (error) {
+        console.error('加载档案列表失败:', error);
+        alert('加载档案失败：' + error.message);
+    }
+}
+
+// 提交档案
+async function submitArchive(e) {
+    e.preventDefault();
+    
+    try {
+        console.log('开始提交档案...');
+        console.log('正在获取表单元素...');
+        
+        // 获取并记录所有表单元素
+        const sourceElement = document.getElementById('source');
+        console.log('source元素:', sourceElement);
+        
+        const elementElement = document.getElementById('element');
+        console.log('element元素:', elementElement);
+        
+        const rawCustomDataElement = document.getElementById('rawCustomData');
+        console.log('rawCustomData元素:', rawCustomDataElement);
+        
+        const selectedTagsContainer = document.getElementById('selectedTags');
+        console.log('selectedTags容器:', selectedTagsContainer);
+        
+        // 检查元素是否存在
+        if (!sourceElement || !elementElement || !rawCustomDataElement || !selectedTagsContainer) {
+            console.error('表单元素缺失:', {
+                sourceExists: !!sourceElement,
+                elementExists: !!elementElement,
+                rawCustomDataExists: !!rawCustomDataElement,
+                selectedTagsExists: !!selectedTagsContainer
+            });
+            throw new Error('表单元素缺失，请检查页面结构');
+        }
+        
+        // 获取表单数据
+        const source = sourceElement.value.trim();
+        const element = elementElement.value.trim();
+        const rawCustomData = rawCustomDataElement.value.trim();
+        
+        console.log('表单数据:', {
+            source,
+            element,
+            rawCustomData
+        });
+        
+        // 获取标签数据
+        const tags = Array.from(selectedTagsContainer.children)
+            .map(tag => tag.textContent.trim())
+            .filter(tag => tag);
+            
+        console.log('已选标签:', tags);
+        
+        // 验证必填字段
+        if (!source || !element) {
+            throw new Error('请填写来源和要素');
+        }
+        
+        console.log('准备提交的完整档案数据:', {
+            source,
+            element,
+            rawCustomData,
+            tags
+        });
+
+        console.log('开始发送请求...');
+        const response = await fetchWithAuth('/archives', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                source,
+                element,
+                rawCustomData,
+                tags
+            })
+        });
+
+        console.log('收到响应:', response);
+        if (!response.ok) {
+            const error = await response.json();
+            console.error('服务器返回错误:', error);
+            throw new Error(error.message || '创建档案失败');
+        }
+
+        const savedArchive = await response.json();
+        console.log('保存成功，返回数据:', savedArchive);
+
+        // 清空表单
+        console.log('正在清空表单...');
+        document.getElementById('archiveForm').reset();
+        document.getElementById('selectedTags').innerHTML = '';
+        
+        // 显示成功消息
+        alert('档案创建成功');
+        
+        // 显示最新创建的档案
+        console.log('显示最新创建的档案...');
+        showLatestArchive(savedArchive);
+        
+        // 重新加载档案列表
+        console.log('重新加载档案列表...');
+        loadArchivesList(1);
+    } catch (error) {
+        console.error('提交档案失败:', error);
+        console.error('错误堆栈:', error.stack);
+        alert('提交失败：' + error.message);
+    }
+}
+
+// 绑定表单提交事件
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM加载完成，开始绑定表单事件...');
+    const archiveForm = document.getElementById('archiveForm');
+    console.log('找到表单元素:', archiveForm);
+    
+    if (archiveForm) {
+        console.log('绑定表单提交事件...');
+        archiveForm.addEventListener('submit', submitArchive);
+        console.log('表单提交事件绑定完成');
+    } else {
+        console.error('未找到表单元素！');
+    }
+});
