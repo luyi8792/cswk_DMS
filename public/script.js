@@ -351,7 +351,7 @@ async function searchArchives(page = 1) {
     }
 }
 
-// 显示档���列表
+// 显示档案列表
 function displayArchives(archives, pagination, containerId, paginationId) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -557,7 +557,7 @@ async function searchArchives(page = 1) {
         // 显示搜索结果
         const searchResults = document.getElementById('searchResults');
         if (data.archives.length === 0) {
-            searchResults.innerHTML = '<div class="no-data">未找���匹配的档案</div>';
+            searchResults.innerHTML = '<div class="no-data">未找到匹配的档案</div>';
         } else {
             displayArchives(data.archives, pagination, 'searchResults', 'searchPagination');
         }
@@ -596,7 +596,7 @@ async function loadTags(context = 'input') {
             </span>
         `).join('');
         
-        // 如果是设置页面，默认展开
+        // 如果是设置页面，默���展开
         if (context === 'settings') {
             tagPool.classList.add('expanded');
             const toggleButton = tagPool.querySelector('.tag-pool-toggle');
@@ -1292,7 +1292,7 @@ async function addCustomTag(context) {
             loadTags(context);
         } else {
             const error = await response.json();
-            if (error.message === '标签已存在') {
+            if (error.message === '标签已存���') {
                 // 如果标签已存在，直接添加到已选标签中
                 selectTag(tagName, context);
                 input.value = '';
@@ -1306,7 +1306,7 @@ async function addCustomTag(context) {
     }
 }
 
-// 添加新标签���管理员功能）
+// 添加新标签（管理员功能）
 async function addTag() {
     const input = document.getElementById('settingsNewTag');
     const tagName = input.value.trim();
@@ -1387,6 +1387,12 @@ async function loadTagsList() {
             // 为删除按钮添加事件监听器
             const deleteButton = tagItem.querySelector('.delete-tag');
             deleteButton.addEventListener('click', async () => {
+                // 检查标签使用次数
+                if (tag.usageCount > 0) {
+                    alert('该标签正在被使用，请先删除包含该标签的档案或者为对应档案取消该标签');
+                    return;
+                }
+                
                 if (confirm(`确定要删除标签"${tag.name}"吗？`)) {
                     try {
                         const response = await fetchWithAuth(`/tags/${tag._id}`, {
@@ -1463,7 +1469,7 @@ async function loadArchivesList(page = 1) {
 
         const data = await response.json();
         
-        // 构建分页数据
+        // 构建分��数据
         const pagination = {
             current: parseInt(page),
             pageSize: 10,
