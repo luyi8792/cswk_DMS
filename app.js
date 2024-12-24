@@ -5,10 +5,25 @@ const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 const { generateToken, verifyToken, isAdmin } = require('./middleware/auth');
 const Tag = require('./models/Tag');
+const path = require('path');
 
 const app = express();
 app.use(express.json());
+
+// 配置静态文件服务
+// 为网站的静态资源（HTML、CSS、JS等）提供服务
 app.use(express.static('public'));
+
+// 为上传的档案图片提供服务
+// 注意：这里使用 /uploads 作为URL前缀，对应到 public/uploads 目录
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+
+// 确保上传目录存在
+const fs = require('fs');
+const uploadDir = path.join(__dirname, 'public/uploads/archives');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // 连接数据库
 mongoose.connect('mongodb://root:zhsbkczj@mongodb-mongodb.ns-5a3vu6yx.svc:27017')
