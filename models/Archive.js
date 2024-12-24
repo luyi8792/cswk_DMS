@@ -37,6 +37,11 @@ const archiveSchema = new mongoose.Schema({
         type: String,
         ref: 'Tag'
     }],
+    // 子档案
+    subArchives: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'SubArchive'
+    }],
     // 录入信息
     createdBy: {          // 录入账号
         type: String,
@@ -58,5 +63,8 @@ archiveSchema.index({
     element: 'text',
     'customData': 'text'
 });
+
+// 添加子档案相关的索引
+archiveSchema.index({ 'subArchives': 1 });
 
 module.exports = mongoose.model('Archive', archiveSchema); 
