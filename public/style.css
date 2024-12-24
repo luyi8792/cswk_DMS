@@ -1568,7 +1568,7 @@ button:hover,
 }
 
 .tag-item .delete-tag {
-    color: #e53e3e;
+    color: #ffffff;
     cursor: pointer;
     padding: 0.5rem;
     border-radius: var(--radius-sm);
@@ -1576,7 +1576,7 @@ button:hover,
 }
 
 .tag-item .delete-tag:hover {
-    background: #fff5f5;
+    background: #e53e3e;
 }
 
 /* 搜索框标签样式 */

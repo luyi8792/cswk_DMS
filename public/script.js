@@ -10,19 +10,29 @@ function showPage(pageId) {
     if (page) {
         page.style.display = 'block';
         
-        // 如果是首页，加载统计信息
-        if (pageId === 'home') {
-            loadHomeStats();
-        }
-        // 如果是档案列表页面，加载档案列表
-        else if (pageId === 'list') {
-            loadArchives(1);
-        }
-        // 如果是搜索页面，清空搜索结果
-        else if (pageId === 'search') {
-            document.getElementById('searchKeyword').value = '';
-            document.getElementById('searchResults').innerHTML = '';
-            document.getElementById('searchPagination').innerHTML = '';
+        // 根据页面类型执行相应的加载操作
+        switch (pageId) {
+            case 'home':
+                loadHomeStats();
+                break;
+            case 'list':
+                loadArchivesList(1);
+                break;
+            case 'search':
+                // 清空搜索结果和加载标签池
+                document.getElementById('searchInput').value = '';
+                document.getElementById('searchResults').innerHTML = '';
+                document.getElementById('searchPagination').innerHTML = '';
+                loadTags('search');
+                break;
+            case 'settings':
+                // 加载标签列表和标签池
+                loadTagsList();
+                break;
+            case 'input':
+                // 加载标签池
+                loadTags('input');
+                break;
         }
     }
 }
@@ -341,7 +351,7 @@ async function searchArchives(page = 1) {
     }
 }
 
-// 显示档案列表
+// 显示档���列表
 function displayArchives(archives, pagination, containerId, paginationId) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -420,7 +430,7 @@ function displayArchives(archives, pagination, containerId, paginationId) {
         container.appendChild(archiveElement);
     });
 
-    // 更新���页
+    // 更新分页
     const paginationContainer = document.getElementById(paginationId);
     if (paginationContainer && pagination) {
         updatePagination(paginationContainer, {
@@ -477,31 +487,28 @@ function showPage(pageId) {
         page.style.display = 'block';
     }
 
-    // 据页面类型执行特定操作
+    // 根据页面类型执行相应的加载操作
     switch (pageId) {
         case 'home':
-            // 加载首页统计信息
             loadHomeStats();
             break;
-        case 'input':
-            // 加载录入页面标签池
-            loadTags('input');
-            break;
         case 'list':
-            // 加载档案列表
             loadArchivesList(1);
             break;
         case 'search':
-            // 加载搜索页面标签池
+            // 清空搜索结果和加载标签池
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchResults').innerHTML = '';
+            document.getElementById('searchPagination').innerHTML = '';
             loadTags('search');
             break;
         case 'settings':
-            if (userRole === 'admin') {
-                // 加载标签管理页面
-                loadTagsList();
-                // 加载设置页面标签池
-                loadTags('settings');
-            }
+            // 加载标签列表和标签池
+            loadTagsList();
+            break;
+        case 'input':
+            // 加载标签池
+            loadTags('input');
             break;
     }
 }
@@ -550,7 +557,7 @@ async function searchArchives(page = 1) {
         // 显示搜索结果
         const searchResults = document.getElementById('searchResults');
         if (data.archives.length === 0) {
-            searchResults.innerHTML = '<div class="no-data">未找到匹配的档案</div>';
+            searchResults.innerHTML = '<div class="no-data">未找���匹配的档案</div>';
         } else {
             displayArchives(data.archives, pagination, 'searchResults', 'searchPagination');
         }
@@ -1005,7 +1012,7 @@ async function showLatestArchive(archive) {
                 </div>
                 <div class="latest-archive-content">
                     <p><strong>来源：</strong>${archive.source || ''}</p>
-                    <p><strong>要���：</strong>${archive.element || ''}</p>
+                    <p><strong>要素：</strong>${archive.element || ''}</p>
                     ${tagsHtml}
                     ${customDataHtml}
                     <div class="creation-info">
@@ -1299,7 +1306,7 @@ async function addCustomTag(context) {
     }
 }
 
-// 添加新标签（管理员功能）
+// 添加新标签���管理员功能）
 async function addTag() {
     const input = document.getElementById('settingsNewTag');
     const tagName = input.value.trim();
@@ -1341,47 +1348,72 @@ async function loadTagsList() {
     try {
         const response = await fetchWithAuth('/tags');
         if (!response.ok) {
-            throw new Error('加载标签失败');
+            throw new Error('获取标签失败');
         }
-        const tags = await response.json();
         
-        // 更新标签列表
+        const tags = await response.json();
         const tagsList = document.getElementById('tagsList');
-        if (tagsList) {
-            tagsList.innerHTML = '';
+        
+        if (!tagsList) {
+            console.error('未找到标签列表容器');
+            return;
+        }
+        
+        // 清空现有内容
+        tagsList.innerHTML = '';
+        
+        if (tags.length === 0) {
+            tagsList.innerHTML = '<div class="no-data">暂无标签</div>';
+            return;
+        }
+        
+        // 按使用次数降序排序
+        tags.sort((a, b) => b.usageCount - a.usageCount);
+        
+        // 创建标签列表
+        tags.forEach(tag => {
+            const tagItem = document.createElement('div');
+            tagItem.className = 'tag-item';
+            tagItem.innerHTML = `
+                <div class="tag-info">
+                    <span class="tag-name">${tag.name}</span>
+                    <span class="tag-count">使用次数: ${tag.usageCount}</span>
+                </div>
+                <button class="delete-tag" data-tag-id="${tag._id}">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            `;
             
-            tags.forEach(tag => {
-                const tagItem = document.createElement('div');
-                tagItem.className = 'tag-item';
-                tagItem.innerHTML = `
-                    <div class="tag-info">
-                        <span class="tag-name">${tag.name}</span>
-                        <span class="tag-count">使用次数：${tag.usageCount || 0}</span>
-                    </div>
-                    <button onclick="deleteTag('${tag._id}')" class="delete-btn">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                `;
-                tagsList.appendChild(tagItem);
+            // 为删除按钮添加事件监听器
+            const deleteButton = tagItem.querySelector('.delete-tag');
+            deleteButton.addEventListener('click', async () => {
+                if (confirm(`确定要删除标签"${tag.name}"吗？`)) {
+                    try {
+                        const response = await fetchWithAuth(`/tags/${tag._id}`, {
+                            method: 'DELETE'
+                        });
+                        
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(error.message);
+                        }
+                        
+                        // 删除成功后重新加载标签列表
+                        loadTagsList();
+                        // 重新加载标签池
+                        loadTags('input');
+                        loadTags('search');
+                        
+                        // alert('标签删除成功');
+                    } catch (error) {
+                        console.error('删除标签失败:', error);
+                        alert('删除标签失败：' + error.message);
+                    }
+                }
             });
-        }
-
-        // 更新标签池，显示所有标签
-        const tagPool = document.getElementById('settingsTagPool');
-        if (tagPool) {
-            const tagPoolGrid = tagPool.querySelector('.tag-pool-grid');
-            if (tagPoolGrid) {
-                tagPoolGrid.innerHTML = tags.map(tag => `
-                    <span class="tag">${tag.name}</span>
-                `).join('');
-            }
-            // 默认展开标签池
-            tagPool.classList.add('expanded');
-            const toggleButton = tagPool.querySelector('.tag-pool-toggle');
-            if (toggleButton) {
-                toggleButton.textContent = '收起';
-            }
-        }
+            
+            tagsList.appendChild(tagItem);
+        });
     } catch (error) {
         console.error('加载标签列表失败:', error);
         alert('加载标签列表失败：' + error.message);
@@ -1568,7 +1600,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (archiveForm) {
         console.log('绑定表单提交事件...');
         archiveForm.addEventListener('submit', submitArchive);
-        console.log('表单提交事���绑定完成');
+        console.log('表单提交事件绑定完成');
     } else {
         console.error('未找到表单元素！');
     }
