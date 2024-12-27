@@ -83,6 +83,13 @@
                         <div class="tag-pool-grid"></div>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>子档案：</label>
+                    <div id="subArchives"></div>
+                    <button type="button" onclick="addSubArchive()" class="secondary-button">
+                        <i class="fas fa-plus"></i> 添加子档案
+                    </button>
+                </div>
                 <button type="submit" class="primary-button">提交档案</button>
             </form>
         </div>
@@ -106,7 +113,7 @@
             
             <div class="tag-pool" id="searchTagPool">
                 <div class="tag-pool-header">
-                    <span class="tag-pool-title">按标签筛选</span>
+                    <span class="tag-pool-title">按���签筛选</span>
                     <span class="tag-pool-toggle" onclick="toggleTagPool(this)">显示全部</span>
                 </div>
                 <div class="tag-pool-grid"></div>

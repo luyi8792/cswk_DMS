@@ -596,7 +596,7 @@ async function loadTags(context = 'input') {
             </span>
         `).join('');
         
-        // 如果是设置页面，默���展开
+        // 如果是设置页面，默认展开
         if (context === 'settings') {
             tagPool.classList.add('expanded');
             const toggleButton = tagPool.querySelector('.tag-pool-toggle');
@@ -1292,7 +1292,7 @@ async function addCustomTag(context) {
             loadTags(context);
         } else {
             const error = await response.json();
-            if (error.message === '标签已存���') {
+            if (error.message === '标签已存在') {
                 // 如果标签已存在，直接添加到已选标签中
                 selectTag(tagName, context);
                 input.value = '';
@@ -1404,7 +1404,7 @@ async function loadTagsList() {
                             throw new Error(error.message);
                         }
                         
-                        // 删除成功后重新加载标签列表
+                        // 删除成功后重新加载标签��表
                         loadTagsList();
                         // 重新加载标签池
                         loadTags('input');
@@ -1469,7 +1469,7 @@ async function loadArchivesList(page = 1) {
 
         const data = await response.json();
         
-        // 构建分��数据
+        // 构建分页数据
         const pagination = {
             current: parseInt(page),
             pageSize: 10,
@@ -1490,63 +1490,31 @@ async function submitArchive(e) {
     
     try {
         console.log('开始提交档案...');
-        console.log('正在获取表单元素...');
         
-        // 获取并记录所有表单元素
-        const sourceElement = document.getElementById('source');
-        console.log('source元素:', sourceElement);
-        
-        const elementElement = document.getElementById('element');
-        console.log('element元素:', elementElement);
-        
-        const rawCustomDataElement = document.getElementById('rawCustomData');
-        console.log('rawCustomData元素:', rawCustomDataElement);
-        
+        // 获取主档案数据
+        const source = document.getElementById('source').value.trim();
+        const element = document.getElementById('element').value.trim();
+        const rawCustomData = document.getElementById('rawCustomData').value.trim();
         const selectedTagsContainer = document.getElementById('selectedTags');
-        console.log('selectedTags容器:', selectedTagsContainer);
-        
-        // 检查元素是否存在
-        if (!sourceElement || !elementElement || !rawCustomDataElement || !selectedTagsContainer) {
-            console.error('表单元素缺失:', {
-                sourceExists: !!sourceElement,
-                elementExists: !!elementElement,
-                rawCustomDataExists: !!rawCustomDataElement,
-                selectedTagsExists: !!selectedTagsContainer
-            });
-            throw new Error('表单元素缺失，请检查页面结构');
-        }
-        
-        // 获取表单数据
-        const source = sourceElement.value.trim();
-        const element = elementElement.value.trim();
-        const rawCustomData = rawCustomDataElement.value.trim();
-        
-        console.log('表单数据:', {
-            source,
-            element,
-            rawCustomData
-        });
-        
-        // 获取标签数据
-        const tags = Array.from(selectedTagsContainer.children)
-            .map(tag => tag.textContent.trim())
-            .filter(tag => tag);
-            
-        console.log('已选标签:', tags);
         
         // 验证必填字段
         if (!source || !element) {
             throw new Error('请填写来源和要素');
         }
         
-        console.log('准备提交的完整档案数据:', {
+        // 获取标签数据
+        const tags = Array.from(selectedTagsContainer.children)
+            .map(tag => tag.textContent.trim())
+            .filter(tag => tag);
+        
+        console.log('准备提交的主档案数据:', {
             source,
             element,
             rawCustomData,
             tags
         });
 
-        console.log('开始发送请求...');
+        // 提交主档案
         const response = await fetchWithAuth('/archives', {
             method: 'POST',
             headers: {
@@ -1560,35 +1528,71 @@ async function submitArchive(e) {
             })
         });
 
-        console.log('收到响应:', response);
         const responseData = await response.json();
 
         if (!response.ok) {
             if (response.status === 409) {
-                // 要素已存在的情况
                 const result = confirm('该要素已存在，是否查看已有档案？');
                 if (result) {
                     showArchiveDetail(responseData.existingArchive);
                 }
-                return; // 直接返回，不抛出错误
+                return;
             }
             throw new Error(responseData.message || '创建档案失败');
         }
 
+        // 获取创建的主档案ID
+        const archiveId = responseData._id;
+        
+        // 提交子档案
+        const subArchiveItems = document.querySelectorAll('.sub-archive-item');
+        for (const item of subArchiveItems) {
+            const content = item.querySelector('.sub-archive-text').value.trim();
+            if (!content) continue; // 跳过空的子档案
+            
+            const formData = new FormData();
+            formData.append('content', content);
+            
+            // 获取图片文件
+            const imageItems = item.querySelectorAll('.image-preview-item img');
+            const imageFiles = [];
+            
+            for (const img of imageItems) {
+                // 将base64图片转换为文件
+                const file = await fetch(img.src)
+                    .then(res => res.blob())
+                    .then(blob => new File([blob], `image-${Date.now()}.jpg`, { type: 'image/jpeg' }));
+                
+                formData.append('images', file);
+            }
+            
+            // 提交子档案
+            try {
+                const subArchiveResponse = await fetchWithAuth(`/archives/${archiveId}/subArchives`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!subArchiveResponse.ok) {
+                    console.error('子档案创建失败:', await subArchiveResponse.json());
+                }
+            } catch (error) {
+                console.error('子档案提交失败:', error);
+            }
+        }
+        
         // 清空表单
-        console.log('正在清空表单...');
         document.getElementById('archiveForm').reset();
         document.getElementById('selectedTags').innerHTML = '';
+        document.getElementById('subArchives').innerHTML = ''; // 清空所有子档案
         
         // 显示成功消息
         alert('档案创建成功');
         
         // 显示最新创建的档案
-        console.log('显示最新创建的档案...');
         showLatestArchive(responseData);
         
         // 重新加载档案列表
-        console.log('重新加载档案列表...');
         loadArchivesList(1);
     } catch (error) {
         console.error('提交档案失败:', error);
@@ -1611,3 +1615,77 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('未找到表单元素！');
     }
 });
+
+// 添加子档案
+function addSubArchive() {
+    const subArchivesContainer = document.getElementById('subArchives');
+    const subArchiveItem = document.createElement('div');
+    subArchiveItem.className = 'sub-archive-item';
+    
+    const itemId = Date.now(); // 使用时间戳作为临时ID
+    
+    subArchiveItem.innerHTML = `
+        <div class="sub-archive-content">
+            <textarea class="sub-archive-text" placeholder="请输入子档案内容" rows="4"></textarea>
+            <div class="sub-archive-images">
+                <label for="file-${itemId}">
+                    <i class="fas fa-image"></i> 选择图片
+                </label>
+                <input type="file" id="file-${itemId}" class="sub-archive-file" accept="image/jpeg,image/png,image/gif" multiple>
+                <div class="image-preview"></div>
+            </div>
+        </div>
+        <button type="button" class="remove-sub-archive" onclick="removeSubArchive(this)">
+            <i class="fas fa-trash"></i> 删除
+        </button>
+    `;
+    
+    subArchivesContainer.appendChild(subArchiveItem);
+    
+    // 绑定图片上传事件
+    const fileInput = subArchiveItem.querySelector('.sub-archive-file');
+    fileInput.addEventListener('change', handleImageSelect);
+}
+
+// 删除子档案
+function removeSubArchive(button) {
+    const subArchiveItem = button.closest('.sub-archive-item');
+    subArchiveItem.remove();
+}
+
+// 处理图片选择
+function handleImageSelect(event) {
+    const files = event.target.files;
+    const preview = event.target.parentElement.querySelector('.image-preview');
+    preview.innerHTML = '';
+    
+    for (const file of files) {
+        if (!file.type.match('image.*')) {
+            continue;
+        }
+        
+        const reader = new FileReader();
+        const imagePreviewItem = document.createElement('div');
+        imagePreviewItem.className = 'image-preview-item';
+        
+        reader.onload = (function(imageItem) {
+            return function(e) {
+                imageItem.innerHTML = `
+                    <img src="${e.target.result}" alt="预览图片">
+                    <span class="remove-image" onclick="removeImage(this)">
+                        <i class="fas fa-times"></i>
+                    </span>
+                `;
+            };
+        })(imagePreviewItem);
+        
+        reader.readAsDataURL(file);
+        preview.appendChild(imagePreviewItem);
+    }
+}
+
+// 删除预览图片
+function removeImage(button) {
+    const imageItem = button.closest('.image-preview-item');
+    imageItem.remove();
+}
