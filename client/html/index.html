@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>档案管理系统</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">DMS</div>
+            <button class="menu-toggle" onclick="toggleMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-menu">
+                <li><a href="#" onclick="checkAuthAndShowPage('home')" data-page="home">概览</a></li>
+                <li><a href="#" onclick="checkAuthAndShowPage('input')" data-page="input">录入</a></li>
+                <li><a href="#" onclick="checkAuthAndShowPage('list')" data-page="list">档案</a></li>
+                <li><a href="#" onclick="checkAuthAndShowPage('search')" data-page="search">搜索</a></li>
+                <li class="admin-only"><a href="#" onclick="checkAuthAndShowPage('settings')" data-page="settings">设置</a></li>
+            </ul>
+            <div class="user-info">
+                <span id="username" class="user-name"></span>
+                <button onclick="logout()" class="btn btn-logout">退出</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 首页 -->
+        <div id="homePage" class="page">
+            <div class="stats-card">
+                <h2>系统概览</h2>
+                <div class="stats-grid">
+                    <div class="stat-item" onclick="checkAuthAndShowPage('list')" style="cursor: pointer;">
+                        <div class="stat-label">总档案数</div>
+                        <div class="stat-value" id="totalArchives">-</div>
+                    </div>
+                    <div class="stat-item" onclick="showLatestArchive()" style="cursor: pointer;">
+                        <div class="stat-label">最新录入</div>
+                        <div class="stat-value" id="latestArchive">-</div>
+                        <div class="stat-detail" id="latestArchiveDetail" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 档案录入页 -->
+        <div id="inputPage" class="page">
+            <h2>录入档案</h2>
+            <form id="archiveForm" class="input-form">
+                <div class="form-group">
+                    <label for="source">来源：</label>
+                    <input type="text" id="source" name="source" required>
+                </div>
+                <div class="form-group">
+                    <label for="element">要素：</label>
+                    <input type="text" id="element" name="element" required>
+                </div>
+                <div class="form-group">
+                    <label for="rawCustomData">自定义数据：</label>
+                    <textarea id="rawCustomData" name="rawCustomData" rows="10" 
+                        placeholder="请输入键值对格式的数据，每行一个，使用冒号分隔，例如：&#10;位置: 北京&#10;时间: 2023年"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>标签：</label>
+                    <div class="selected-tags" id="selectedTags"></div>
+                    <input type="hidden" id="selectedTagsInput" value="[]">
+                    <div class="tag-input-container">
+                        <input type="text" id="newTag" placeholder="输入新标签">
+                        <button type="button" onclick="addCustomTag('input')" class="primary-button">添加标签</button>
+                    </div>
+                    <div class="tag-pool" id="tagPool">
+                        <div class="tag-pool-header">
+                            <span class="tag-pool-title">可选标签</span>
+                            <span class="tag-pool-toggle" onclick="toggleTagPool(this)">显示全部</span>
+                        </div>
+                        <div class="tag-pool-grid"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>子档案：</label>
+                    <div id="subArchives"></div>
+                    <button type="button" onclick="addSubArchive()" class="secondary-button">
+                        <i class="fas fa-plus"></i> 添加子档案
+                    </button>
+                </div>
+                <button type="submit" class="primary-button">提交档案</button>
+            </form>
+        </div>
+
+        <!-- 档案列表页 -->
+        <div id="listPage" class="page" style="display: none;">
+            <h2>档案列表</h2>
+            <div id="archivesList"></div>
+            <div class="pagination" id="listPagination"></div>
+        </div>
+
+        <!-- 档案查询页 -->
+        <div id="searchPage" class="page" style="display: none;">
+            <h2>搜索档案</h2>
+            <div class="search-container">
+                <form id="searchForm" onsubmit="searchArchives(1); return false;">
+                    <input type="text" id="searchInput" placeholder="输入关键词搜索...">
+                    <button type="submit" class="primary-button">搜索</button>
+                </form>
+            </div>
+            
+            <div class="tag-pool" id="searchTagPool">
+                <div class="tag-pool-header">
+                    <span class="tag-pool-title">按标签筛选</span>
+                    <span class="tag-pool-toggle" onclick="toggleTagPool(this)">显示全部</span>
+                </div>
+                <div class="tag-pool-grid"></div>
+                <div class="selected-tags" id="searchSelectedTags"></div>
+                <input type="hidden" id="searchSelectedTagsInput" name="searchTags">
+            </div>
+
+            <div id="searchResults"></div>
+            <div id="searchPagination" class="pagination"></div>
+        </div>
+
+        <!-- 设置页面（仅管理员可见） -->
+        <div id="settingsPage" class="page admin-only" style="display: none;">
+            <h2>标签管理</h2>
+            <div class="settings-container">
+                <!-- 标签池显示 
+                <div class="tag-pool" id="settingsTagPool">
+                    <div class="tag-pool-header">
+                        <span class="tag-pool-title">现有标签</span>
+                        <span class="tag-pool-toggle" onclick="toggleTagPool(this)">显示全部</span>
+                    </div>
+                    <div class="tag-pool-grid"></div>
+                </div>
+                -->
+                <!-- 添加新标签 -->
+                <div class="form-group">
+                    <label>添加新标签：</label>
+                    <div class="tag-input-container">
+                        <input type="text" id="settingsNewTag" placeholder="输入标签名称">
+                        <button onclick="addTag()" class="primary-button">添加</button>
+                    </div>
+                </div>
+
+                <!-- 标签列表 -->
+                <div class="tags-list" id="tagsList">
+                    <!-- 标签列表将通过JavaScript动态加载 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 登录页面 -->
+        <div id="loginPage" class="page">
+            <div class="login-container">
+                <div class="login-box">
+                    <div class="login-header">
+                        <h2>档案管理系统</h2>
+                        <p>请登录您的账号</p>
+                    </div>
+                    <form id="loginForm" class="login-form">
+                        <div class="form-group">
+                            <div class="input-group">
+                                <i class="fas fa-user"></i>
+                                <input type="text" id="loginUsername" name="username" placeholder="请输入用户名" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="input-group">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" id="loginPassword" name="password" placeholder="请输入密码" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="login-btn">登 录</button>
+                    </form>
+                    <div class="login-footer">
+                        <p>默认管理员账号：admin</p>
+                        <p>默认管理员密码：admin123</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="../js/utils.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/ui.js"></script>
+    <script src="../js/archive.js"></script>
+    <script src="../js/tag.js"></script>
+    <script src="../js/main.js"></script>
+</body>
+</html> 

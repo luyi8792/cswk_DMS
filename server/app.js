@@ -14,7 +14,7 @@ app.use(express.json());
 
 // 配置静态文件服务
 // 为网站的静态资源（HTML、CSS、JS等）提供服务
-app.use(express.static(path.join(__dirname, 'client')));
+app.use(express.static('public'));
 
 // 为上传的档案图片提供服务
 // 注意：这里使用 /uploads 作为URL前缀，对应到 public/uploads 目录
@@ -406,7 +406,7 @@ app.post('/archives', verifyToken, async (req, res) => {
             }
         }
         
-        console.log('最终有效标签:', validTags);
+        console.log('最终��效标签:', validTags);
         
         // 创建新档案
         const archive = new Archive({
@@ -577,7 +577,7 @@ app.post('/archives/:archiveId/subArchives', verifyToken, upload.array('images',
         // 检查主档案是否存在
         const archive = await Archive.findById(archiveId);
         if (!archive) {
-            return res.status(404).json({ message: '主档案不存在' });
+            return res.status(404).json({ message: '主档���不存在' });
         }
         
         // 检查权限：只有管理员或创建者可以添加子档案
@@ -803,11 +803,6 @@ app.delete('/archives/:archiveId/subArchives/:subArchiveId/images/:imageId', ver
         console.error('删除图片失败:', error);
         res.status(500).json({ message: '删除图片失败：' + error.message });
     }
-});
-
-// 所有路由都返回 index.html
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client/html/index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
