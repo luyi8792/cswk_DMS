@@ -40,7 +40,7 @@ mongoose.connect('mongodb://root:zhsbkczj@mongodb-mongodb.ns-5a3vu6yx.svc:27017'
 
 # 启动应用
 echo "[$(timestamp)] 正在启动应用..."
-node app.js > app.log 2>&1 &
+node server/app.js > app.log 2>&1 &
 APP_PID=$!
 
 # 等待应用启动
