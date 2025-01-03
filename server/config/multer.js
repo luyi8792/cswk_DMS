@@ -1,11 +1,12 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { ARCHIVES_UPLOAD_DIR } = require('./paths');
 
 // 确保上传目录存在
-const uploadDir = path.join(__dirname, '../../public/uploads/archives');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
+console.log("上传目录：" + ARCHIVES_UPLOAD_DIR);
+if (!fs.existsSync(ARCHIVES_UPLOAD_DIR)) {
+    fs.mkdirSync(ARCHIVES_UPLOAD_DIR, { recursive: true });
 }
 
 // 配置 multer 存储
@@ -14,7 +15,7 @@ const storage = multer.diskStorage({
         // 根据主档案ID和子档案ID创建目录
         const archiveId = req.params.archiveId;
         const subArchiveId = req.params.subArchiveId || 'temp';
-        const dir = path.join(uploadDir, archiveId, subArchiveId);
+        const dir = path.join(ARCHIVES_UPLOAD_DIR, archiveId, subArchiveId);
         
         // 确保目录存在
         fs.mkdirSync(dir, { recursive: true });
