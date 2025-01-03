@@ -45,7 +45,7 @@ const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-        fileSize: 2 * 1024 * 1024, // 限制文件大小为2MB
+        fileSize: 20 * 1024 * 1024, // 限制文件大小为2MB
         files: 10 // 限制每次最多上传10个文件
     }
 });

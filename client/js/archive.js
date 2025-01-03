@@ -419,6 +419,41 @@ async function showArchiveDetail(archiveIdOrObject) {
                 <pre>${archive.rawCustomData}</pre>
                </div>`
             : '';
+
+        // 获取子档案列表
+        let subArchivesHtml = '';
+        try {
+            const subArchivesResponse = await fetchWithAuth(`/archives/${archive._id}/subArchives`);
+            if (subArchivesResponse.ok) {
+                const subArchivesData = await subArchivesResponse.json();
+                if (subArchivesData.subArchives && subArchivesData.subArchives.length > 0) {
+                    subArchivesHtml = `
+                        <div class="detail-section">
+                            <h4>子档案列表</h4>
+                            <div class="sub-archives-list">
+                                ${subArchivesData.subArchives.map(subArchive => `
+                                    <div class="sub-archive-item" onclick="showSubArchiveDetail('${archive._id}', '${subArchive._id}')">
+                                        <div class="sub-archive-content">
+                                            ${truncateText(subArchive.content, 20)}
+                                        </div>
+                                        <div class="sub-archive-info">
+                                            <span class="image-count">
+                                                <i class="fas fa-image"></i> ${subArchive.images ? subArchive.images.length : 0}张图片
+                                            </span>
+                                            <span class="sub-archive-date">
+                                                ${new Date(subArchive.createdAt).toLocaleString()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        } catch (error) {
+            console.error('获取子档案列表失败:', error);
+        }
         
         popup.innerHTML = `
             <div class="archive-detail-card">
@@ -437,6 +472,7 @@ async function showArchiveDetail(archiveIdOrObject) {
                     
                     ${tagsHtml}
                     ${customDataHtml}
+                    ${subArchivesHtml}
                     
                     <div class="detail-section">
                         <h4>录入信息</h4>
@@ -632,7 +668,6 @@ function removeSubArchive(button) {
 function handleImageSelect(event) {
     const files = event.target.files;
     const preview = event.target.parentElement.querySelector('.image-preview');
-    preview.innerHTML = '';
     
     for (const file of files) {
         if (!file.type.match('image.*')) {
@@ -646,7 +681,7 @@ function handleImageSelect(event) {
         reader.onload = (function(imageItem) {
             return function(e) {
                 imageItem.innerHTML = `
-                    <img src="${e.target.result}" alt="预览图片">
+                    <img src="${e.target.result}" alt="预览图片" onclick="showImagePreview(this.src)">
                     <span class="remove-image" onclick="removeImage(this)">
                         <i class="fas fa-times"></i>
                     </span>
@@ -657,6 +692,8 @@ function handleImageSelect(event) {
         reader.readAsDataURL(file);
         preview.appendChild(imagePreviewItem);
     }
+    
+    event.target.value = '';
 }
 
 function removeImage(button) {
@@ -671,3 +708,166 @@ document.addEventListener('DOMContentLoaded', () => {
         archiveForm.addEventListener('submit', submitArchive);
     }
 });
+
+// 显示子档案详情
+async function showSubArchiveDetail(archiveId, subArchiveId) {
+    try {
+        const response = await fetchWithAuth(`/archives/${archiveId}/subArchives/${subArchiveId}`);
+        if (!response.ok) {
+            throw new Error('获取子档案详情失败');
+        }
+        const subArchive = await response.json();
+
+        const popup = document.createElement('div');
+        popup.className = 'archive-detail-popup';
+        
+        const imagesHtml = subArchive.images && subArchive.images.length > 0
+            ? `<div class="sub-archive-images-grid">
+                ${subArchive.images.map(image => `
+                    <div class="sub-archive-image">
+                        <img src="${image.path.startsWith('/') ? image.path : '/' + image.path}" 
+                            alt="子档案图片" 
+                            onclick="showEnhancedImagePreview(this.src)">
+                    </div>
+                `).join('')}
+               </div>`
+            : '';
+
+        popup.innerHTML = `
+            <div class="archive-detail-card">
+                <div class="archive-detail-header">
+                    <h3>子档案详情</h3>
+                    <button class="archive-detail-close" onclick="closeArchiveDetail()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="archive-detail-content">
+                    <div class="detail-section">
+                        <h4>内容</h4>
+                        <div class="sub-archive-full-content">
+                            ${subArchive.content}
+                        </div>
+                    </div>
+                    ${imagesHtml ? `
+                        <div class="detail-section">
+                            <h4>图片</h4>
+                            ${imagesHtml}
+                        </div>
+                    ` : ''}
+                    <div class="detail-section">
+                        <h4>录入信息</h4>
+                        <p><strong>录入时间：</strong>${new Date(subArchive.createdAt).toLocaleString()}</p>
+                        <p><strong>录入账号：</strong>${subArchive.createdBy}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(popup);
+        
+        popup.addEventListener('click', (e) => {
+            if (e.target === popup) {
+                closeArchiveDetail();
+            }
+        });
+
+        requestAnimationFrame(() => {
+            popup.classList.add('active');
+        });
+    } catch (error) {
+        console.error('显示子档案详情失败:', error);
+        alert('显示子档案详情失败：' + error.message);
+    }
+}
+
+// 显示增强的图片预览
+function showEnhancedImagePreview(imgSrc) {
+    const popup = document.createElement('div');
+    popup.className = 'image-preview-popup';
+    
+    popup.innerHTML = `
+        <div class="image-preview-content">
+            <img src="${imgSrc}" alt="预览图片" style="transform: scale(1) rotate(0deg)">
+            <div class="image-preview-controls">
+                <button onclick="rotateImage(this, -90)" title="向左旋转90度">
+                    <i class="fas fa-undo"></i>
+                </button>
+                <button onclick="rotateImage(this, 90)" title="向右旋转90度">
+                    <i class="fas fa-redo"></i>
+                </button>
+                <button onclick="scaleImage(this, 0.8)" title="缩小">
+                    <i class="fas fa-search-minus"></i>
+                </button>
+                <button onclick="scaleImage(this, 1.25)" title="放大">
+                    <i class="fas fa-search-plus"></i>
+                </button>
+                <button onclick="downloadImage(this)" title="下载图片">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+            <button class="image-preview-close" onclick="closeImagePreview(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(popup);
+    
+    popup.addEventListener('click', (e) => {
+        if (e.target === popup) {
+            closeImagePreview(popup.querySelector('.image-preview-close'));
+        }
+    });
+    
+    requestAnimationFrame(() => {
+        popup.classList.add('active');
+    });
+}
+
+// 旋转图片
+function rotateImage(button, degree) {
+    const img = button.closest('.image-preview-content').querySelector('img');
+    const currentRotation = getCurrentRotation(img);
+    const newRotation = currentRotation + degree;
+    img.style.transform = img.style.transform.replace(/rotate\([^)]*\)/, `rotate(${newRotation}deg)`);
+}
+
+// 缩放图片
+function scaleImage(button, factor) {
+    const img = button.closest('.image-preview-content').querySelector('img');
+    const currentScale = getCurrentScale(img);
+    const newScale = Math.max(0.1, Math.min(5, currentScale * factor)); // 限制缩放范围
+    img.style.transform = img.style.transform.replace(/scale\([^)]*\)/, `scale(${newScale})`);
+}
+
+// 下载图片
+function downloadImage(button) {
+    const img = button.closest('.image-preview-content').querySelector('img');
+    const link = document.createElement('a');
+    link.href = img.src;
+    link.download = 'image-' + Date.now() + '.jpg';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// 获取当前旋转角度
+function getCurrentRotation(element) {
+    const transform = element.style.transform;
+    const match = transform.match(/rotate\(([-\d.]+)deg\)/);
+    return match ? parseFloat(match[1]) : 0;
+}
+
+// 获取当前缩放比例
+function getCurrentScale(element) {
+    const transform = element.style.transform;
+    const match = transform.match(/scale\(([-\d.]+)\)/);
+    return match ? parseFloat(match[1]) : 1;
+}
+
+// 关闭图片预览
+function closeImagePreview(button) {
+    const popup = button.closest('.image-preview-popup');
+    popup.classList.remove('active');
+    setTimeout(() => popup.remove(), 300);
+}
