@@ -6,10 +6,25 @@ function showPage(pageId) {
     });
 
     // 显示指定页面
-    const page = document.getElementById(pageId + 'Page');
-    if (page) {
-        page.style.display = 'block';
+    const targetPage = document.getElementById(pageId + 'Page');
+    if (targetPage) {
+        targetPage.style.display = 'block';
     }
+
+    // 处理导航栏显示/隐藏
+    const navbar = document.querySelector('.navbar');
+    if (navbar) {
+        navbar.style.display = pageId === 'login' ? 'none' : 'block';
+    }
+
+    // 更新导航菜单的激活状态
+    document.querySelectorAll('.nav-menu a').forEach(link => {
+        if (link.getAttribute('data-page') === pageId) {
+            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
+        }
+    });
 
     // 根据页面类型执行相应的加载操作
     switch (pageId) {
