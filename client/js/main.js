@@ -1,17 +1,38 @@
 // 页面加载完成后执行
-document.addEventListener('DOMContentLoaded', () => {
-    // 初始化用户状态
-    if (initializeUserState()) {
-        // 初始化页面
-        showPage('list');
-        // 加载标签池
-        loadTags('input');
-        loadTags('search');
-        // 如果是管理员，加载标签列表
-        if (userRole === 'admin') {
-            loadTagsList();
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        // 初始化用户状态
+        if (initializeUserState()) {
+            // 验证token是否有效
+            const response = await fetchWithAuth('/auth/verify');
+            if (!response.ok) {
+                throw new Error('Token验证失败');
+            }
+
+            // 初始化页面
+            showPage('list');
+            
+            // 等待标签加载完成
+            try {
+                await Promise.all([
+                    loadTags('input'),
+                    loadTags('search')
+                ]);
+                
+                // 如果是管理员，加载标签列表
+                if (userRole === 'admin') {
+                    await loadTagsList();
+                }
+            } catch (error) {
+                console.error('加载标签失败:', error);
+                alert('加载标签失败，请刷新页面重试');
+            }
+        } else {
+            showPage('login');
         }
-    } else {
+    } catch (error) {
+        console.error('初始化失败:', error);
+        logout(); // 如果验证失败，执行登出操作
         showPage('login');
     }
 
