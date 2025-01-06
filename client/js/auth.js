@@ -2,13 +2,58 @@
 let userRole = null;
 let token = localStorage.getItem('token');
 
+// 初始化用户状态
+function initializeUserState() {
+    token = localStorage.getItem('token');
+    if (token) {
+        userRole = localStorage.getItem('userRole');
+        updateUIBasedOnRole();
+        return true;
+    }
+    return false;
+}
+
+// 更新基于角色的UI元素
+function updateUIBasedOnRole() {
+    // 只处理当前显示页面中的元素
+    const currentPage = document.querySelector('.page:not([style*="display: none"])');
+    if (!currentPage) return;
+
+    // 处理删除按钮
+    const deleteButtons = currentPage.querySelectorAll('.delete-button');
+    deleteButtons.forEach(button => {
+        button.style.display = userRole === 'admin' ? 'block' : 'none';
+    });
+
+    // 处理管理员专属元素
+    const adminOnlyElements = currentPage.querySelectorAll('.admin-only');
+    adminOnlyElements.forEach(element => {
+        element.style.display = userRole === 'admin' ? 'block' : 'none';
+    });
+
+    // 处理导航栏中的管理员专属元素
+    const navAdminElements = document.querySelectorAll('.nav-menu .admin-only');
+    navAdminElements.forEach(element => {
+        element.style.display = userRole === 'admin' ? 'block' : 'none';
+    });
+}
+
 // 检查登录状态
 function checkAuth() {
     if (!token) {
         showPage('login');
         return false;
     }
-    return true;
+    // 验证token中的用户角色
+    try {
+        const user = JSON.parse(atob(token.split('.')[1]));
+        userRole = user.role;
+        return true;
+    } catch (error) {
+        console.error('Token验证失败:', error);
+        logout();
+        return false;
+    }
 }
 
 // 检查是否为管理员
@@ -53,7 +98,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
             localStorage.setItem('username', usernameInput.value);
             localStorage.setItem('userRole', data.role);
             localStorage.setItem('loginTime', new Date().toISOString());
-            updateUI();
+            updateUIBasedOnRole();
             showPage('home');
         } else {
             usernameInput.classList.add('error');
@@ -73,14 +118,22 @@ function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
     localStorage.removeItem('userRole');
+    localStorage.removeItem('loginTime');
     showPage('login');
 }
 
 // 检查登录状态并显示页面
 function checkAuthAndShowPage(pageId) {
-    if (!token) {
+    if (!initializeUserState()) {
         showPage('login');
         return;
     }
+    
+    if (pageId === 'settings' && userRole !== 'admin') {
+        showPage('home');
+        return;
+    }
+    
     showPage(pageId);
+    updateUIBasedOnRole();
 }

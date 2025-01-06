@@ -1,9 +1,7 @@
 // 页面加载完成后执行
 document.addEventListener('DOMContentLoaded', () => {
-    // 检查登录状态
-    const token = localStorage.getItem('token');
-    if (token) {
-        userRole = localStorage.getItem('role');
+    // 初始化用户状态
+    if (initializeUserState()) {
         // 初始化页面
         showPage('list');
         // 加载标签池
