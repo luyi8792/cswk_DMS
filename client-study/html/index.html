@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <!-- 文档元信息 -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>档案管理系统 - 登录</title>
+    <!-- CSS 样式文件链接（第2课会用到） -->
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- 登录容器 -->
+    <div class="login-container">
+        <!-- 登录框 -->
+        <div class="login-box">
+            <!-- 登录头部 -->
+            <div class="login-header">
+                <h2>档案管理系统</h2>
+                <p>请登录您的账号</p>
+            </div>
+            <!-- 登录表单 -->
+            <form id="loginForm" class="login-form">
+                <!-- 用户名输入组 -->
+                <div class="form-group">
+                    <label for="username">用户名：</label>
+                    <input type="text" 
+                           id="username" 
+                           name="username" 
+                           required 
+                           placeholder="请输入用户名">
+                </div>
+                <!-- 密码输入组 -->
+                <div class="form-group">
+                    <label for="password">密码：</label>
+                    <input type="password" 
+                           id="password" 
+                           name="password" 
+                           required 
+                           placeholder="请输入密码">
+                </div>
+                <!-- 提交按钮 -->
+                <button type="submit" class="login-btn">登 录</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript 文件引入（第3课会用到） -->
+    <script src="../js/auth.js"></script>
+    <script src="../js/main.js"></script>
+</body>
+</html>
