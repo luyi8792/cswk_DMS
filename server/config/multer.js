@@ -1,12 +1,12 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { ARCHIVES_UPLOAD_DIR } = require('./paths');
+const { UPLOAD_CONFIG } = require('./index');
 
 // 确保上传目录存在
-console.log("上传目录：" + ARCHIVES_UPLOAD_DIR);
-if (!fs.existsSync(ARCHIVES_UPLOAD_DIR)) {
-    fs.mkdirSync(ARCHIVES_UPLOAD_DIR, { recursive: true });
+console.log("上传目录：" + UPLOAD_CONFIG.ARCHIVES_UPLOAD_DIR);
+if (!fs.existsSync(UPLOAD_CONFIG.ARCHIVES_UPLOAD_DIR)) {
+    fs.mkdirSync(UPLOAD_CONFIG.ARCHIVES_UPLOAD_DIR, { recursive: true });
 }
 
 // 配置 multer 存储
@@ -15,7 +15,7 @@ const storage = multer.diskStorage({
         // 根据主档案ID和子档案ID创建目录
         const archiveId = req.params.archiveId;
         const subArchiveId = req.params.subArchiveId || 'temp';
-        const dir = path.join(ARCHIVES_UPLOAD_DIR, archiveId, subArchiveId);
+        const dir = path.join(UPLOAD_CONFIG.ARCHIVES_UPLOAD_DIR, archiveId, subArchiveId);
         
         // 确保目录存在
         fs.mkdirSync(dir, { recursive: true });
@@ -32,11 +32,9 @@ const storage = multer.diskStorage({
 // 文件过滤器
 const fileFilter = (req, file, cb) => {
     // 检查文件类型
-    if (!file.mimetype.match(/^image\/(jpeg|png|gif)$/)) {
+    if (!file.mimetype.match(UPLOAD_CONFIG.ALLOWED_MIME_TYPES)) {
         return cb(new Error('只允许上传 JPG、PNG 或 GIF 格式的图片'), false);
     }
-    
-    // 检查文件大小（在multer配置中设置）
     cb(null, true);
 };
 
@@ -44,20 +42,17 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
-    limits: {
-        fileSize: 20 * 1024 * 1024, // 限制文件大小为2MB
-        files: 10 // 限制每次最多上传10个文件
-    }
+    limits: UPLOAD_CONFIG.FILE_LIMITS
 });
 
 // 错误处理中间件
 const handleUploadError = (err, req, res, next) => {
     if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
-            return res.status(400).json({ message: '文件大小不能超过2MB' });
+            return res.status(400).json({ message: `文件大小不能超过${UPLOAD_CONFIG.FILE_LIMITS.fileSize / (1024 * 1024)}MB` });
         }
         if (err.code === 'LIMIT_FILE_COUNT') {
-            return res.status(400).json({ message: '一次最多只能上传10个文件' });
+            return res.status(400).json({ message: `一次最多只能上传${UPLOAD_CONFIG.FILE_LIMITS.files}个文件` });
         }
         return res.status(400).json({ message: '文件上传失败：' + err.message });
     }

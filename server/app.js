@@ -2,14 +2,14 @@ const express = require('express');
 const path = require('path');
 const connectDB = require('./config/database');
 const { handleUploadError } = require('./config/multer');
-const { BASE_UPLOAD_DIR, UPLOAD_URL_PREFIX } = require('./config/paths');
+const { SERVER_CONFIG, UPLOAD_CONFIG } = require('./config/index');
 
 const app = express();
 app.use(express.json());
 
 // 配置静态文件服务
 app.use(express.static(path.join(__dirname, '../client')));
-app.use(UPLOAD_URL_PREFIX, express.static(BASE_UPLOAD_DIR));
+app.use(UPLOAD_CONFIG.UPLOAD_URL_PREFIX, express.static(UPLOAD_CONFIG.BASE_UPLOAD_DIR));
 
 // 错误处理中间件
 app.use(handleUploadError);
@@ -28,7 +28,6 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../client/html/index.html'));
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`服务器运行在端口 ${PORT}`);
+app.listen(SERVER_CONFIG.PORT, () => {
+    console.log(`服务器运行在端口:${SERVER_CONFIG.PORT}`);
 }); 
