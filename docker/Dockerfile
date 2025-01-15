@@ -1,4 +1,4 @@
-FROM bitnami/node:18
+FROM slim/node:18
 
 # 设置工作目录
 WORKDIR /app
