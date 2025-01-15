@@ -1,4 +1,4 @@
-FROM registry.cn-hangzhou.aliyuncs.com/library/node:18-alpine
+FROM bitnami/node:18
 
 # 设置工作目录
 WORKDIR /app
