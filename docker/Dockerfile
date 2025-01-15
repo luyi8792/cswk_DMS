@@ -1,7 +1,10 @@
-FROM node:18-alpine
+FROM registry.cn-hangzhou.aliyuncs.com/library/node:18-alpine
 
 # 设置工作目录
 WORKDIR /app
+
+# 设置npm镜像源为淘宝镜像
+RUN npm config set registry https://registry.npmmirror.com
 
 # 复制package.json文件
 COPY server/package*.json ./server/
