@@ -7,8 +7,8 @@ WORKDIR /app
 RUN npm config set registry https://registry.npmmirror.com
 
 # 复制package.json文件
-COPY ../server/package*.json ./server/
-COPY ../client/package*.json ./client/
+COPY server/package*.json ./server/
+COPY client/package*.json ./client/
 
 # 安装依赖
 WORKDIR /app/server
@@ -18,8 +18,8 @@ RUN npm install
 
 # 复制源代码
 WORKDIR /app
-COPY ../server ./server
-COPY ../client ./client
+COPY server ./server
+COPY client ./client
 
 # 设置环境变量
 ENV NODE_ENV=production
