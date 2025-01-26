@@ -3,17 +3,17 @@ version: '3.8'
 services:
   app:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - MONGODB_URI=mongodb://mongodb:27017/archivedb
+      - MONGODB_URI=mongodb://mongodb:27017/?directConnection=true
     depends_on:
       - mongodb
     volumes:
-      - ../uploads:/app/uploads
+      - uploads:/app/public/uploads
     networks:
       - app-network
 
