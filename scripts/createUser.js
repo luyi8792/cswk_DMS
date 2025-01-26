@@ -1,50 +1,56 @@
 // 引入必要的模块
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const User = require('../models/User');
+const { DB_CONFIG } = require('../server/config/index');
 
-// 获取命令行参数
-const args = process.argv.slice(2);
-
-// 检查参数数量
-if (args.length !== 3) {
-    console.error('使用方法: node createUser.js <用户类型(1:管理员/2:普通用户)> <账号> <密码>');
+// 检查命令行参数
+if (process.argv.length !== 5) {
+    console.error('用法: node createUser.js <用户名> <密码> <用户类型(admin/user)>');
     process.exit(1);
 }
 
-// 解析参数
-const [userType, username, password] = args;
+const [,, username, password, role] = process.argv;
 
 // 验证用户类型
-if (userType !== '1' && userType !== '2') {
-    console.error('错误：用户类型必须是 1(管理员) 或 2(普通用户)');
+if (role !== 'admin' && role !== 'user') {
+    console.error('错误: 用户类型必须是 "admin" 或 "user"');
     process.exit(1);
 }
 
-// 验证用户名长度
-if (username.length < 3) {
-    console.error('错误：用户名长度必须大于等于3个字符');
-    process.exit(1);
-}
+// 用户模型
+const userSchema = new mongoose.Schema({
+    username: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    password: {
+        type: String,
+        required: true
+    },
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user'
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+});
 
-// 验证密码长度
-if (password.length < 6) {
-    console.error('错误：密码长度必须大于等于6个字符');
-    process.exit(1);
-}
+const User = mongoose.model('User', userSchema);
 
-// 连接数据库
-mongoose.connect('mongodb://root:zhsbkczj@mongodb-mongodb.ns-5a3vu6yx.svc:27017', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(async () => {
+async function addUser() {
     try {
-        console.log('数据库连接成功，开始创建用户...');
-        
-        // 检查用户名是否已存在
+        // 连接数据库
+        await mongoose.connect(DB_CONFIG.URL, DB_CONFIG.OPTIONS);
+        console.log('数据库连接成功');
+
+        // 检查用户是否已存在
         const existingUser = await User.findOne({ username });
         if (existingUser) {
-            console.error('错误：用户名已存在');
+            console.error('错误: 用户名已存在');
             process.exit(1);
         }
 
@@ -55,23 +61,16 @@ mongoose.connect('mongodb://root:zhsbkczj@mongodb-mongodb.ns-5a3vu6yx.svc:27017'
         const user = new User({
             username,
             password: hashedPassword,
-            role: userType === '1' ? 'admin' : 'user'
+            role
         });
 
-        // 保存用户
         await user.save();
-        console.log('用户创建成功！');
-        console.log('用户名：', username);
-        console.log('用户类型：', userType === '1' ? '管理员' : '普通用户');
-        console.log('密码：', password);
-
+        console.log('用户创建成功');
+        process.exit(0);
     } catch (error) {
-        console.error('创建用户失败:', error.message);
-    } finally {
-        // 关闭数据库连接
-        await mongoose.connection.close();
-        console.log('数据库连接已关闭');
+        console.error('错误:', error.message);
+        process.exit(1);
     }
-}).catch(error => {
-    console.error('数据库连接失败:', error);
-}); 
+}
+
+addUser(); 
